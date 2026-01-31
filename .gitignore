@@ -1,0 +1,79 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# PyTorch
+*.pt
+*.pth
+*.ckpt
+
+# Data files (too large for git)
+*.csv
+*.pkl
+*.npy
+*.npz
+resources/datasets/*
+!resources/datasets/.gitkeep
+
+# Experiment outputs (track selectively)
+experiments/*/outputs/
+experiments/*/checkpoints/
+wandb/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# LaTeX
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.toc
+*.synctex.gz
+
+# Secrets
+.env
+*.key
+credentials.json
