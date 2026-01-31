@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Tidiane DIALLO" />
+  <title>Cours Deep Learning - Semaines 1 &amp; 2</title>
+  <style>
+    html {
+      font-size: 11pt;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Cours Deep Learning - Semaines 1 &amp; 2</h1>
+<p class="subtitle">Thèse: Attaques d’extraction et défenses pour les
+DNN au-delà de ReLU</p>
+<p class="author">Tidiane DIALLO</p>
+<p class="date">Janvier 2026</p>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#semaine-1-perceptron-et-réseaux-multicouches-mlp"
+id="toc-semaine-1-perceptron-et-réseaux-multicouches-mlp">SEMAINE 1 :
+Perceptron et Réseaux Multicouches (MLP)</a>
+<ul>
+<li><a href="#introduction-aux-réseaux-de-neurones"
+id="toc-introduction-aux-réseaux-de-neurones">Introduction aux Réseaux
+de Neurones</a>
+<ul>
+<li><a href="#contexte-historique" id="toc-contexte-historique">Contexte
+Historique</a></li>
+<li><a href="#pourquoi-cest-important-pour-ta-thèse"
+id="toc-pourquoi-cest-important-pour-ta-thèse">Pourquoi c’est important
+pour ta thèse</a></li>
+<li><a href="#le-neurone-biologique-vs-artificiel"
+id="toc-le-neurone-biologique-vs-artificiel">Le Neurone Biologique vs
+Artificiel</a></li>
+</ul></li>
+<li><a href="#le-perceptron-simple" id="toc-le-perceptron-simple">Le
+Perceptron Simple</a>
+<ul>
+<li><a href="#définition-mathématique"
+id="toc-définition-mathématique">Définition Mathématique</a></li>
+<li><a href="#fonction-dactivation-du-perceptron-original"
+id="toc-fonction-dactivation-du-perceptron-original">Fonction
+d’Activation du Perceptron Original</a></li>
+<li><a href="#interprétation-géométrique"
+id="toc-interprétation-géométrique">Interprétation Géométrique</a></li>
+<li><a href="#algorithme-dapprentissage-du-perceptron"
+id="toc-algorithme-dapprentissage-du-perceptron">Algorithme
+d’Apprentissage du Perceptron</a></li>
+<li><a href="#limitation-le-problème-xor"
+id="toc-limitation-le-problème-xor">Limitation : Le Problème
+XOR</a></li>
+</ul></li>
+<li><a href="#perceptron-multicouches-mlp"
+id="toc-perceptron-multicouches-mlp">Perceptron Multicouches (MLP)</a>
+<ul>
+<li><a href="#architecture" id="toc-architecture">Architecture</a></li>
+<li><a href="#notation-mathématique"
+id="toc-notation-mathématique">Notation Mathématique</a></li>
+<li><a href="#théorème-dapproximation-universelle"
+id="toc-théorème-dapproximation-universelle">Théorème d’Approximation
+Universelle</a></li>
+</ul></li>
+<li><a href="#propagation-avant-forward-pass"
+id="toc-propagation-avant-forward-pass">Propagation Avant (Forward
+Pass)</a>
+<ul>
+<li><a href="#algorithme" id="toc-algorithme">Algorithme</a></li>
+<li><a href="#importance-pour-lextraction-de-modèles"
+id="toc-importance-pour-lextraction-de-modèles">Importance pour
+l’Extraction de Modèles</a></li>
+</ul></li>
+<li><a href="#rétropropagation-backpropagation"
+id="toc-rétropropagation-backpropagation">Rétropropagation
+(Backpropagation)</a>
+<ul>
+<li><a href="#principe" id="toc-principe">Principe</a></li>
+<li><a href="#la-règle-de-la-chaîne" id="toc-la-règle-de-la-chaîne">La
+Règle de la Chaîne</a></li>
+<li><a href="#algorithme-de-backpropagation"
+id="toc-algorithme-de-backpropagation">Algorithme de
+Backpropagation</a></li>
+<li><a href="#lien-avec-la-cryptanalyse"
+id="toc-lien-avec-la-cryptanalyse">Lien avec la Cryptanalyse</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#semaine-2-fonctions-dactivation"
+id="toc-semaine-2-fonctions-dactivation">SEMAINE 2 : Fonctions
+d’Activation</a>
+<ul>
+<li><a href="#introduction" id="toc-introduction">Introduction</a>
+<ul>
+<li><a href="#rôle-des-fonctions-dactivation"
+id="toc-rôle-des-fonctions-dactivation">Rôle des Fonctions
+d’Activation</a></li>
+<li><a href="#importance-critique-pour-ta-thèse"
+id="toc-importance-critique-pour-ta-thèse">Importance Critique pour ta
+Thèse</a></li>
+</ul></li>
+<li><a href="#fonctions-dactivation-classiques"
+id="toc-fonctions-dactivation-classiques">Fonctions d’Activation
+Classiques</a>
+<ul>
+<li><a href="#sigmoid-logistique" id="toc-sigmoid-logistique">Sigmoid
+(Logistique)</a></li>
+<li><a href="#tanh-tangente-hyperbolique"
+id="toc-tanh-tangente-hyperbolique">Tanh (Tangente
+Hyperbolique)</a></li>
+</ul></li>
+<li><a href="#relu-et-ses-variantes" id="toc-relu-et-ses-variantes">ReLU
+et ses Variantes</a>
+<ul>
+<li><a href="#relu-rectified-linear-unit"
+id="toc-relu-rectified-linear-unit">ReLU (Rectified Linear
+Unit)</a></li>
+<li><a href="#propriété-cruciale-linéaire-par-morceaux"
+id="toc-propriété-cruciale-linéaire-par-morceaux">Propriété Cruciale :
+Linéaire par Morceaux</a></li>
+<li><a href="#variantes" id="toc-variantes">Variantes</a></li>
+</ul></li>
+<li><a href="#gelu---gaussian-error-linear-unit"
+id="toc-gelu---gaussian-error-linear-unit">GELU - Gaussian Error Linear
+Unit</a>
+<ul>
+<li><a href="#définition" id="toc-définition">Définition</a></li>
+<li><a href="#interprétation-probabiliste"
+id="toc-interprétation-probabiliste">Interprétation
+Probabiliste</a></li>
+<li><a href="#approximation-pratique-gpt-bert"
+id="toc-approximation-pratique-gpt-bert">Approximation Pratique (GPT,
+BERT)</a></li>
+<li><a href="#dérivée-de-gelu" id="toc-dérivée-de-gelu">Dérivée de
+GELU</a></li>
+<li><a href="#utilisation" id="toc-utilisation">Utilisation</a></li>
+</ul></li>
+<li><a href="#siluswish" id="toc-siluswish">SiLU/Swish</a>
+<ul>
+<li><a href="#définition-1" id="toc-définition-1">Définition</a></li>
+<li><a href="#dérivée-de-silu" id="toc-dérivée-de-silu">Dérivée de
+SiLU</a></li>
+<li><a href="#utilisation-1" id="toc-utilisation-1">Utilisation</a></li>
+</ul></li>
+<li><a href="#analyse-comparative" id="toc-analyse-comparative">Analyse
+Comparative</a>
+<ul>
+<li><a href="#tableau-récapitulatif"
+id="toc-tableau-récapitulatif">Tableau Récapitulatif</a></li>
+<li><a href="#dérivées-secondes" id="toc-dérivées-secondes">Dérivées
+Secondes</a></li>
+</ul></li>
+<li><a href="#implications-pour-lextraction-de-modèles"
+id="toc-implications-pour-lextraction-de-modèles">Implications pour
+l’Extraction de Modèles</a>
+<ul>
+<li><a href="#pourquoi-relu-est-vulnérable"
+id="toc-pourquoi-relu-est-vulnérable">Pourquoi ReLU est
+Vulnérable</a></li>
+<li><a href="#pourquoi-gelusilu-sont-plus-résistants"
+id="toc-pourquoi-gelusilu-sont-plus-résistants">Pourquoi GELU/SiLU sont
+Plus Résistants</a></li>
+<li><a href="#défis-pour-ta-thèse" id="toc-défis-pour-ta-thèse">Défis
+pour ta Thèse</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#résumé" id="toc-résumé">Résumé</a>
+<ul>
+<li><a href="#concepts-clés" id="toc-concepts-clés">Concepts
+Clés</a></li>
+<li><a href="#message-central" id="toc-message-central">Message
+Central</a></li>
+</ul></li>
+<li><a href="#ressources" id="toc-ressources">Ressources</a>
+<ul>
+<li><a href="#vidéos-recommandées" id="toc-vidéos-recommandées">Vidéos
+Recommandées</a></li>
+<li><a href="#lectures" id="toc-lectures">Lectures</a></li>
+<li><a href="#code" id="toc-code">Code</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="semaine-1-perceptron-et-réseaux-multicouches-mlp">SEMAINE 1 :
+Perceptron et Réseaux Multicouches (MLP)</h1>
+<h2 id="introduction-aux-réseaux-de-neurones">Introduction aux Réseaux
+de Neurones</h2>
+<h3 id="contexte-historique">Contexte Historique</h3>
+<p>Les réseaux de neurones artificiels s’inspirent du fonctionnement du
+cerveau humain. L’histoire commence en <strong>1943</strong> avec le
+modèle de McCulloch et Pitts, suivi du <strong>perceptron de Rosenblatt
+en 1958</strong>.</p>
+<p>La révolution majeure arrive en <strong>1986</strong> quand
+<strong>Rumelhart, Hinton et Williams</strong> introduisent l’algorithme
+de rétropropagation (backpropagation), permettant l’entraînement
+efficace des réseaux multicouches.</p>
+<h3 id="pourquoi-cest-important-pour-ta-thèse">Pourquoi c’est important
+pour ta thèse</h3>
+<p>Les attaques d’extraction de modèles exploitent la structure
+mathématique des réseaux de neurones. Comprendre :</p>
+<ul>
+<li>Comment les poids transforment les données</li>
+<li>Comment les gradients révèlent de l’information</li>
+<li>Pourquoi certaines activations (ReLU) créent des “points
+critiques”</li>
+</ul>
+<p>…est <strong>fondamental</strong> pour comprendre les attaques
+cryptanalytiques sur les DNN.</p>
+<h3 id="le-neurone-biologique-vs-artificiel">Le Neurone Biologique vs
+Artificiel</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Neurone Biologique</th>
+<th>Neurone Artificiel</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Dendrites (entrées)</td>
+<td><span
+class="math inline"><em>x</em><sub>1</sub>, <em>x</em><sub>2</sub>, ..., <em>x</em><sub><em>n</em></sub></span>
+(inputs)</td>
+</tr>
+<tr class="even">
+<td>Corps cellulaire</td>
+<td>Somme pondérée + biais</td>
+</tr>
+<tr class="odd">
+<td>Axone (sortie)</td>
+<td>Fonction d’activation → y</td>
+</tr>
+<tr class="even">
+<td>Synapses (connexions)</td>
+<td>Poids <span
+class="math inline"><em>w</em><sub>1</sub>, <em>w</em><sub>2</sub>, ..., <em>w</em><sub><em>n</em></sub></span></td>
+</tr>
+</tbody>
+</table>
+<h2 id="le-perceptron-simple">Le Perceptron Simple</h2>
+<h3 id="définition-mathématique">Définition Mathématique</h3>
+<p>Le perceptron est le modèle le plus simple d’un neurone
+artificiel.</p>
+<p><strong>Équation fondamentale :</strong></p>
+<p><span class="math display">$$z = \sum_{i=1}^{n} w_i \cdot x_i + b =
+\mathbf{w}^T \mathbf{x} + b$$</span></p>
+<p><span
+class="math display"><em>y</em> = <em>f</em>(<em>z</em>)</span></p>
+<p>où :</p>
+<ul>
+<li><span class="math inline"><strong>x</strong></span> = vecteur
+d’entrée (features)</li>
+<li><span class="math inline"><strong>w</strong></span> = vecteur de
+poids (weights)</li>
+<li><span class="math inline"><em>b</em></span> = biais (bias)</li>
+<li><span class="math inline"><em>f</em></span> = fonction
+d’activation</li>
+<li><span class="math inline"><em>y</em></span> = sortie (output)</li>
+</ul>
+<h3 id="fonction-dactivation-du-perceptron-original">Fonction
+d’Activation du Perceptron Original</h3>
+<p>Le perceptron original utilise une <strong>fonction de seuil (step
+function)</strong> :</p>
+<p><span class="math display">$$f(z) = \begin{cases} 1 &amp; \text{si }
+z \geq 0 \\ 0 &amp; \text{si } z &lt; 0 \end{cases}$$</span></p>
+<h3 id="interprétation-géométrique">Interprétation Géométrique</h3>
+<p>Le perceptron définit un <strong>hyperplan</strong> dans l’espace des
+entrées :</p>
+<p><span
+class="math display"><strong>w</strong><sup><em>T</em></sup><strong>x</strong> + <em>b</em> = 0</span></p>
+<p>Cet hyperplan <strong>sépare</strong> l’espace en deux régions :</p>
+<ul>
+<li>Points où <span
+class="math inline"><strong>w</strong><sup><em>T</em></sup><strong>x</strong> + <em>b</em> &gt; 0</span>
+→ classe 1</li>
+<li>Points où <span
+class="math inline"><strong>w</strong><sup><em>T</em></sup><strong>x</strong> + <em>b</em> &lt; 0</span>
+→ classe 0</li>
+</ul>
+<p><strong>Important pour ta thèse :</strong> Cette séparation linéaire
+est la base des “régions linéaires” créées par ReLU !</p>
+<h3 id="algorithme-dapprentissage-du-perceptron">Algorithme
+d’Apprentissage du Perceptron</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Pseudo-code de l&#39;algorithme du perceptron</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>pour chaque époque:</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    pour chaque exemple (x, y_vrai):</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        y_pred <span class="op">=</span> <span class="dv">1</span> si (w·x <span class="op">+</span> b) <span class="op">&gt;=</span> <span class="dv">0</span> sinon <span class="dv">0</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        erreur <span class="op">=</span> y_vrai <span class="op">-</span> y_pred</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Mise à jour des poids</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        w <span class="op">=</span> w <span class="op">+</span> η <span class="op">*</span> erreur <span class="op">*</span> x</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        b <span class="op">=</span> b <span class="op">+</span> η <span class="op">*</span> erreur</span></code></pre></div>
+<p>où <span class="math inline"><em>η</em></span> (eta) est le
+<strong>taux d’apprentissage</strong> (learning rate).</p>
+<h3 id="limitation-le-problème-xor">Limitation : Le Problème XOR</h3>
+<p>Le perceptron simple ne peut résoudre que les problèmes
+<strong>linéairement séparables</strong>.</p>
+<p>Le XOR n’est pas linéairement séparable et nécessite
+<strong>plusieurs couches</strong> → d’où le MLP !</p>
+<h2 id="perceptron-multicouches-mlp">Perceptron Multicouches (MLP)</h2>
+<h3 id="architecture">Architecture</h3>
+<p>Un MLP est un réseau <strong>feedforward</strong> composé de :</p>
+<ul>
+<li><strong>Couche d’entrée</strong> : reçoit les features</li>
+<li><strong>Couches cachées</strong> : transformations
+non-linéaires</li>
+<li><strong>Couche de sortie</strong> : produit la prédiction</li>
+</ul>
+<h3 id="notation-mathématique">Notation Mathématique</h3>
+<p>Pour un MLP avec L couches :</p>
+<p><strong>Couche l :</strong></p>
+<p><span
+class="math display"><strong>z</strong><sup>[<em>l</em>]</sup> = <strong>W</strong><sup>[<em>l</em>]</sup><strong>a</strong><sup>[<em>l</em>−1]</sup> + <strong>b</strong><sup>[<em>l</em>]</sup></span></p>
+<p><span
+class="math display"><strong>a</strong><sup>[<em>l</em>]</sup> = <em>f</em><sup>[<em>l</em>]</sup>(<strong>z</strong><sup>[<em>l</em>]</sup>)</span></p>
+<p>où :</p>
+<ul>
+<li><span
+class="math inline"><strong>W</strong><sup>[<em>l</em>]</sup></span> =
+matrice de poids de la couche l (dimensions : <span
+class="math inline"><em>n</em><sub><em>l</em></sub> × <em>n</em><sub><em>l</em> − 1</sub></span>)</li>
+<li><span
+class="math inline"><strong>b</strong><sup>[<em>l</em>]</sup></span> =
+vecteur de biais de la couche l</li>
+<li><span
+class="math inline"><strong>z</strong><sup>[<em>l</em>]</sup></span> =
+pré-activation (avant la fonction d’activation)</li>
+<li><span
+class="math inline"><strong>a</strong><sup>[<em>l</em>]</sup></span> =
+activation (après la fonction d’activation)</li>
+<li><span class="math inline"><em>f</em><sup>[<em>l</em>]</sup></span> =
+fonction d’activation de la couche l</li>
+</ul>
+<p><strong>Convention :</strong> <span
+class="math inline"><strong>a</strong><sup>[0]</sup> = <strong>x</strong></span>
+(l’entrée)</p>
+<h3 id="théorème-dapproximation-universelle">Théorème d’Approximation
+Universelle</h3>
+<p><strong>Théorème (Cybenko, 1989) :</strong></p>
+<blockquote>
+<p>Un MLP avec une seule couche cachée et suffisamment de neurones peut
+approximer n’importe quelle fonction continue sur un compact.</p>
+</blockquote>
+<p>En pratique, des réseaux <strong>profonds</strong> (plusieurs
+couches) sont plus efficaces que des réseaux larges (beaucoup de
+neurones dans une seule couche).</p>
+<h2 id="propagation-avant-forward-pass">Propagation Avant (Forward
+Pass)</h2>
+<h3 id="algorithme">Algorithme</h3>
+<p>Le forward pass calcule la sortie du réseau étape par étape :</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> forward_pass(x, weights, biases, activations):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    a <span class="op">=</span> x  <span class="co"># activation initiale = entrée</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> l <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(weights)):</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        z <span class="op">=</span> weights[l] <span class="op">@</span> a <span class="op">+</span> biases[l]  <span class="co"># pré-activation</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        a <span class="op">=</span> activations[l](z)            <span class="co"># activation</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> a  <span class="co"># sortie finale</span></span></code></pre></div>
+<h3 id="importance-pour-lextraction-de-modèles">Importance pour
+l’Extraction de Modèles</h3>
+<p>Lors d’une attaque d’extraction :</p>
+<ol type="1">
+<li>L’attaquant envoie des <strong>requêtes</strong> (inputs x)</li>
+<li>Il observe les <strong>réponses</strong> (outputs y)</li>
+<li>Il essaie de <strong>reconstruire</strong> les poids W et biais
+b</li>
+</ol>
+<p><strong>Point clé :</strong> Avec ReLU, les “points critiques” (où
+ReLU change de comportement) révèlent de l’information sur les poids
+!</p>
+<h2 id="rétropropagation-backpropagation">Rétropropagation
+(Backpropagation)</h2>
+<h3 id="principe">Principe</h3>
+<p>La rétropropagation calcule les <strong>gradients</strong> de la
+fonction de perte par rapport à chaque paramètre, en utilisant la
+<strong>règle de la chaîne</strong> (chain rule).</p>
+<p><strong>Objectif :</strong> Minimiser la fonction de perte <span
+class="math inline"><em>L</em>(<em>ŷ</em>,<em>y</em>)</span></p>
+<p><strong>Méthode :</strong> Descente de gradient</p>
+<p><span class="math display">$$\theta \leftarrow \theta - \eta
+\frac{\partial L}{\partial \theta}$$</span></p>
+<h3 id="la-règle-de-la-chaîne">La Règle de la Chaîne</h3>
+<p>Si <span
+class="math inline"><em>y</em> = <em>f</em>(<em>g</em>(<em>x</em>))</span>,
+alors :</p>
+<p><span class="math display">$$\frac{dy}{dx} = \frac{dy}{dg} \cdot
+\frac{dg}{dx}$$</span></p>
+<p>Pour un réseau de neurones :</p>
+<p><span class="math display">$$\frac{\partial L}{\partial w} =
+\frac{\partial L}{\partial a} \cdot \frac{\partial a}{\partial z} \cdot
+\frac{\partial z}{\partial w}$$</span></p>
+<h3 id="algorithme-de-backpropagation">Algorithme de
+Backpropagation</h3>
+<ol type="1">
+<li><strong>FORWARD PASS</strong> : Calculer toutes les activations
+<span class="math inline"><em>a</em><sup>[<em>l</em>]</sup></span></li>
+<li><strong>CALCUL DE LA PERTE</strong> : <span
+class="math inline"><em>L</em> = Loss(<em>y</em><sub><em>p</em><em>r</em><em>e</em><em>d</em></sub>,<em>y</em><sub><em>v</em><em>r</em><em>a</em><em>i</em></sub>)</span></li>
+<li><strong>BACKWARD PASS</strong> :
+<ul>
+<li>Calculer <span class="math inline">$\delta^{[L]} = \frac{\partial
+L}{\partial z^{[L]}}$</span> (couche de sortie)</li>
+<li>Pour <span class="math inline"><em>l</em> = <em>L</em> − 1</span>
+jusqu’à 1 : <span
+class="math inline"><em>δ</em><sup>[<em>l</em>]</sup> = (<em>W</em><sup>[<em>l</em>+1]</sup>)<sup><em>T</em></sup><em>δ</em><sup>[<em>l</em>+1]</sup> ⊙ <em>f</em>′(<em>z</em><sup>[<em>l</em>]</sup>)</span></li>
+</ul></li>
+<li><strong>GRADIENTS</strong> :
+<ul>
+<li><span class="math inline">$\frac{\partial L}{\partial W^{[l]}} =
+\delta^{[l]} (a^{[l-1]})^T$</span></li>
+<li><span class="math inline">$\frac{\partial L}{\partial b^{[l]}} =
+\delta^{[l]}$</span></li>
+</ul></li>
+<li><strong>MISE À JOUR</strong> :
+<ul>
+<li><span class="math inline">$W^{[l]} = W^{[l]} - \eta \cdot
+\frac{\partial L}{\partial W^{[l]}}$</span></li>
+<li><span class="math inline">$b^{[l]} = b^{[l]} - \eta \cdot
+\frac{\partial L}{\partial b^{[l]}}$</span></li>
+</ul></li>
+</ol>
+<h3 id="lien-avec-la-cryptanalyse">Lien avec la Cryptanalyse</h3>
+<p><strong>Observation clé de Carlini et al. (CRYPTO 2020)
+:</strong></p>
+<p>En utilisant des <strong>différences finies</strong> (numerical
+differentiation), un attaquant peut estimer les gradients sans accès
+direct au modèle :</p>
+<p><span class="math display">$$\frac{\partial f}{\partial x_i} \approx
+\frac{f(x + \epsilon e_i) - f(x - \epsilon e_i)}{2\epsilon}$$</span></p>
+<p>Ces gradients révèlent de l’information sur la structure du réseau
+!</p>
+<h1 id="semaine-2-fonctions-dactivation">SEMAINE 2 : Fonctions
+d’Activation</h1>
+<h2 id="introduction">Introduction</h2>
+<h3 id="rôle-des-fonctions-dactivation">Rôle des Fonctions
+d’Activation</h3>
+<p>Les fonctions d’activation introduisent la
+<strong>non-linéarité</strong> dans les réseaux de neurones. Sans elles,
+un réseau profond serait équivalent à une simple transformation
+linéaire.</p>
+<h3 id="importance-critique-pour-ta-thèse">Importance Critique pour ta
+Thèse</h3>
+<p><strong>Le choix de l’activation détermine si le réseau est
+vulnérable aux attaques d’extraction !</strong></p>
+<ul>
+<li><strong>ReLU</strong> → Crée des régions <strong>linéaires par
+morceaux</strong> → Attaques efficaces (CRYPTO 2020)</li>
+<li><strong>GELU/SiLU</strong> → Fonctions <strong>lisses</strong> →
+Attaques beaucoup plus difficiles</li>
+</ul>
+<p>C’est le <strong>cœur de ton sujet de thèse</strong> !</p>
+<h2 id="fonctions-dactivation-classiques">Fonctions d’Activation
+Classiques</h2>
+<h3 id="sigmoid-logistique">Sigmoid (Logistique)</h3>
+<p><span class="math display">$$\sigma(x) = \frac{1}{1 +
+e^{-x}}$$</span></p>
+<p><strong>Dérivée :</strong></p>
+<p><span
+class="math display"><em>σ</em>′(<em>x</em>) = <em>σ</em>(<em>x</em>)(1−<em>σ</em>(<em>x</em>))</span></p>
+<p><strong>Propriétés :</strong></p>
+<ul>
+<li>Sortie dans <span class="math inline">(0,1)</span> → interprétation
+probabiliste</li>
+<li><strong>Problème</strong> : Gradient s’annule aux extrêmes
+(saturation)</li>
+<li>Maximum de <span
+class="math inline"><em>σ</em>′(<em>x</em>) = 0.25</span> à <span
+class="math inline"><em>x</em> = 0</span></li>
+</ul>
+<h3 id="tanh-tangente-hyperbolique">Tanh (Tangente Hyperbolique)</h3>
+<p><span class="math display">$$\tanh(x) = \frac{e^x - e^{-x}}{e^x +
+e^{-x}} = 2\sigma(2x) - 1$$</span></p>
+<p><strong>Dérivée :</strong></p>
+<p><span
+class="math display">tanh ′(<em>x</em>) = 1 − tanh<sup>2</sup>(<em>x</em>)</span></p>
+<p><strong>Avantage sur sigmoid :</strong> Sorties centrées → meilleure
+convergence</p>
+<h2 id="relu-et-ses-variantes">ReLU et ses Variantes</h2>
+<h3 id="relu-rectified-linear-unit">ReLU (Rectified Linear Unit)</h3>
+<p><span class="math display">$$\text{ReLU}(x) = \max(0, x) =
+\begin{cases} x &amp; \text{si } x &gt; 0 \\ 0 &amp; \text{si } x \leq 0
+\end{cases}$$</span></p>
+<p><strong>Dérivée :</strong></p>
+<p><span class="math display">$$\text{ReLU}'(x) = \begin{cases} 1 &amp;
+\text{si } x &gt; 0 \\ 0 &amp; \text{si } x &lt; 0
+\end{cases}$$</span></p>
+<h3 id="propriété-cruciale-linéaire-par-morceaux">Propriété Cruciale :
+Linéaire par Morceaux</h3>
+<p><strong>C’est LA propriété qui rend ReLU vulnérable aux attaques
+!</strong></p>
+<p>Un réseau avec ReLU divise l’espace d’entrée en <strong>régions
+linéaires</strong> :</p>
+<ul>
+<li>Chaque neurone ReLU crée un hyperplan : <span
+class="math inline"><em>w</em><sup><em>T</em></sup><em>x</em> + <em>b</em> = 0</span></li>
+<li>De part et d’autre de l’hyperplan, le neurone est soit actif (<span
+class="math inline"><em>x</em></span>) soit inactif (<span
+class="math inline">0</span>)</li>
+<li>Avec <span class="math inline"><em>n</em></span> neurones, on peut
+avoir jusqu’à <span class="math inline">2<sup><em>n</em></sup></span>
+régions !</li>
+</ul>
+<p><strong>Implication pour l’extraction :</strong></p>
+<blockquote>
+<p>Les points où le comportement change (hyperplans) révèlent les poids
+du réseau !</p>
+</blockquote>
+<h3 id="variantes">Variantes</h3>
+<ul>
+<li><strong>Leaky ReLU</strong> : <span
+class="math inline"><em>f</em>(<em>x</em>) = max (<em>α</em><em>x</em>,<em>x</em>)</span>
+avec <span class="math inline"><em>α</em> = 0.01</span></li>
+<li><strong>PReLU</strong> : <span class="math inline"><em>α</em></span>
+est appris</li>
+<li><strong>ELU</strong> : <span
+class="math inline"><em>f</em>(<em>x</em>) = <em>x</em></span> si <span
+class="math inline"><em>x</em> &gt; 0</span>, sinon <span
+class="math inline"><em>α</em>(<em>e</em><sup><em>x</em></sup>−1)</span></li>
+</ul>
+<h2 id="gelu---gaussian-error-linear-unit">GELU - Gaussian Error Linear
+Unit</h2>
+<h3 id="définition">Définition</h3>
+<p><strong>Paper original :</strong> Hendrycks &amp; Gimpel (2016)</p>
+<p><span
+class="math display">GELU(<em>x</em>) = <em>x</em> ⋅ <em>Φ</em>(<em>x</em>)</span></p>
+<p>où <span class="math inline"><em>Φ</em>(<em>x</em>)</span> est la
+<strong>fonction de répartition</strong> (CDF) de la loi normale
+standard :</p>
+<p><span class="math display">$$\Phi(x) = \frac{1}{2}\left[1 +
+\text{erf}\left(\frac{x}{\sqrt{2}}\right)\right]$$</span></p>
+<h3 id="interprétation-probabiliste">Interprétation Probabiliste</h3>
+<p>GELU peut être vu comme une <strong>porte stochastique</strong> :</p>
+<p><span
+class="math display">GELU(<em>x</em>) = <em>x</em> ⋅ <em>P</em>(<em>X</em>≤<em>x</em>)
+où <em>X</em> ∼ 𝒩(0,1)</span></p>
+<h3 id="approximation-pratique-gpt-bert">Approximation Pratique (GPT,
+BERT)</h3>
+<p><span class="math display">$$\text{GELU}(x) \approx 0.5x\left[1 +
+\tanh\left(\sqrt{\frac{2}{\pi}}\left(x +
+0.044715x^3\right)\right)\right]$$</span></p>
+<h3 id="dérivée-de-gelu">Dérivée de GELU</h3>
+<p><span
+class="math display">GELU′(<em>x</em>) = <em>Φ</em>(<em>x</em>) + <em>x</em> ⋅ <em>ϕ</em>(<em>x</em>)</span></p>
+<p>où <span class="math inline">$\phi(x) =
+\frac{1}{\sqrt{2\pi}}e^{-\frac{x^2}{2}}$</span> est la PDF normale.</p>
+<h3 id="utilisation">Utilisation</h3>
+<p>GELU est utilisé dans :</p>
+<ul>
+<li><strong>BERT</strong> (Bidirectional Encoder Representations from
+Transformers)</li>
+<li><strong>GPT</strong> (Generative Pre-trained Transformer)</li>
+<li><strong>Vision Transformers (ViT)</strong></li>
+</ul>
+<h2 id="siluswish">SiLU/Swish</h2>
+<h3 id="définition-1">Définition</h3>
+<p><strong>Paper original :</strong> Ramachandran et al. (2017)</p>
+<p><span class="math display">$$\text{SiLU}(x) = x \cdot \sigma(x) =
+\frac{x}{1 + e^{-x}}$$</span></p>
+<h3 id="dérivée-de-silu">Dérivée de SiLU</h3>
+<p><span
+class="math display">SiLU′(<em>x</em>) = <em>σ</em>(<em>x</em>)[1+<em>x</em>(1−<em>σ</em>(<em>x</em>))]</span></p>
+<h3 id="utilisation-1">Utilisation</h3>
+<p>SiLU est populaire dans :</p>
+<ul>
+<li><strong>EfficientNet</strong> (modèles de vision)</li>
+<li><strong>YOLOv5/v8</strong> (détection d’objets)</li>
+</ul>
+<h2 id="analyse-comparative">Analyse Comparative</h2>
+<h3 id="tableau-récapitulatif">Tableau Récapitulatif</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Activation</th>
+<th>Formule</th>
+<th>Lisse ?</th>
+<th>Piecewise Linear ?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Sigmoid</td>
+<td><span class="math inline">$\frac{1}{1+e^{-x}}$</span></td>
+<td>Oui</td>
+<td>Non</td>
+</tr>
+<tr class="even">
+<td>Tanh</td>
+<td><span
+class="math inline">$\frac{e^x-e^{-x}}{e^x+e^{-x}}$</span></td>
+<td>Oui</td>
+<td>Non</td>
+</tr>
+<tr class="odd">
+<td><strong>ReLU</strong></td>
+<td><span class="math inline">max (0,<em>x</em>)</span></td>
+<td><strong>Non</strong></td>
+<td><strong>Oui</strong></td>
+</tr>
+<tr class="even">
+<td>GELU</td>
+<td><span
+class="math inline"><em>x</em><em>Φ</em>(<em>x</em>)</span></td>
+<td>Oui</td>
+<td>Non</td>
+</tr>
+<tr class="odd">
+<td>SiLU</td>
+<td><span
+class="math inline"><em>x</em><em>σ</em>(<em>x</em>)</span></td>
+<td>Oui</td>
+<td>Non</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dérivées-secondes">Dérivées Secondes</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Activation</th>
+<th>Dérivée seconde</th>
+<th>Points critiques</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>ReLU</strong></td>
+<td><span class="math inline">0</span> partout</td>
+<td><strong>Oui, détectables</strong></td>
+</tr>
+<tr class="even">
+<td>GELU</td>
+<td>Non nulle</td>
+<td>Non</td>
+</tr>
+<tr class="odd">
+<td>SiLU</td>
+<td>Non nulle</td>
+<td>Non</td>
+</tr>
+</tbody>
+</table>
+<h2 id="implications-pour-lextraction-de-modèles">Implications pour
+l’Extraction de Modèles</h2>
+<h3 id="pourquoi-relu-est-vulnérable">Pourquoi ReLU est Vulnérable</h3>
+<p>L’attaque CRYPTO 2020 exploite la structure piecewise-linear de ReLU
+:</p>
+<ol type="1">
+<li><strong>Points critiques</strong> : Aux hyperplans <span
+class="math inline"><em>w</em><sup><em>T</em></sup><em>x</em> + <em>b</em> = 0</span>,
+le comportement change brutalement</li>
+<li><strong>Détection des changements</strong> : Les dérivées numériques
+révèlent ces points</li>
+<li><strong>Extraction des poids</strong> : La différence de gradients
+révèle les poids</li>
+</ol>
+<h3 id="pourquoi-gelusilu-sont-plus-résistants">Pourquoi GELU/SiLU sont
+Plus Résistants</h3>
+<table>
+<thead>
+<tr class="header">
+<th>ReLU</th>
+<th>GELU/SiLU</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Changement <strong>discret</strong></td>
+<td>Transition <strong>continue</strong></td>
+</tr>
+<tr class="even">
+<td>Dérivée = 0 ou 1</td>
+<td>Dérivée varie continûment</td>
+</tr>
+<tr class="odd">
+<td>Points critiques détectables</td>
+<td>Pas de signature claire</td>
+</tr>
+</tbody>
+</table>
+<h3 id="défis-pour-ta-thèse">Défis pour ta Thèse</h3>
+<p><strong>Question de recherche centrale :</strong></p>
+<blockquote>
+<p>Comment adapter les attaques cryptanalytiques pour extraire des
+modèles utilisant GELU/SiLU ?</p>
+</blockquote>
+<p><strong>Pistes possibles :</strong></p>
+<ol type="1">
+<li>Approximation piecewise-linear de GELU</li>
+<li>Utilisation des points d’inflexion</li>
+<li>Méthodes d’optimisation alternatives</li>
+<li>Nouvelles approches d’attaque</li>
+</ol>
+<h1 id="résumé">Résumé</h1>
+<h2 id="concepts-clés">Concepts Clés</h2>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 23%" />
+<col style="width: 56%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Concept</th>
+<th>Point clé</th>
+<th>Importance pour la thèse</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Perceptron</td>
+<td><span
+class="math inline"><em>y</em> = <em>f</em>(<em>w</em><sup><em>T</em></sup><em>x</em>+<em>b</em>)</span></td>
+<td>Base de tout neurone</td>
+</tr>
+<tr class="even">
+<td>Forward pass</td>
+<td><span
+class="math inline"><em>a</em><sup>[<em>l</em>]</sup> = <em>f</em>(<em>W</em><sup>[<em>l</em>]</sup><em>a</em><sup>[<em>l</em>−1]</sup>+<em>b</em><sup>[<em>l</em>]</sup>)</span></td>
+<td>Ce que l’attaquant observe</td>
+</tr>
+<tr class="odd">
+<td>Backpropagation</td>
+<td>Chain rule</td>
+<td>Révèle la structure</td>
+</tr>
+<tr class="even">
+<td><strong>ReLU</strong></td>
+<td>Piecewise linear</td>
+<td><strong>Vulnérable</strong></td>
+</tr>
+<tr class="odd">
+<td><strong>GELU/SiLU</strong></td>
+<td>Lisses</td>
+<td><strong>Plus résistants</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="message-central">Message Central</h2>
+<blockquote>
+<p>La nature <strong>piecewise-linear</strong> de ReLU crée des
+“signatures” détectables par les attaques cryptanalytiques. Les
+activations lisses comme GELU et SiLU masquent ces signatures, rendant
+l’extraction beaucoup plus difficile.</p>
+</blockquote>
+<p><strong>C’est le défi que ta thèse doit résoudre !</strong></p>
+<h1 id="ressources">Ressources</h1>
+<h2 id="vidéos-recommandées">Vidéos Recommandées</h2>
+<ol type="1">
+<li><strong>3Blue1Brown - Neural Networks</strong> :
+https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi</li>
+<li><strong>Andrej Karpathy - Micrograd</strong> :
+https://www.youtube.com/watch?v=VMj-3S1tku0</li>
+<li><strong>fast.ai - Lesson 13</strong> :
+https://course.fast.ai/Lessons/lesson13.html</li>
+</ol>
+<h2 id="lectures">Lectures</h2>
+<ol type="1">
+<li><strong>Deep Learning Book</strong> (Goodfellow et al.) :
+https://www.deeplearningbook.org/</li>
+<li><strong>Paper GELU</strong> : https://arxiv.org/abs/1606.08415</li>
+<li><strong>Paper SiLU/Swish</strong> :
+https://arxiv.org/abs/1710.05941</li>
+</ol>
+<h2 id="code">Code</h2>
+<ol type="1">
+<li><strong>Micrograd</strong> :
+https://github.com/karpathy/micrograd</li>
+<li><strong>Ton projet</strong> :
+<code>/root/these-tidiane-diallo/</code></li>
+</ol>
+<hr />
+<p><em>Cours créé le 31 Janvier 2026 - Thèse Tidiane DIALLO</em></p>
+</body>
+</html>
