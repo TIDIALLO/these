@@ -10,6 +10,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+# Force l'UTF-8 en sortie : evite le UnicodeEncodeError sur les emojis
+# quand la console Windows utilise l'encodage cp1252 par defaut.
+sys.stdout.reconfigure(encoding="utf-8")
+
 # Suppression des warnings
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 import warnings
@@ -24,7 +28,9 @@ print("\n[STEP 1] Configuration du modèle")
 print("-" * 85)
 
 IDIM = 64
-DIM = 256  
+DIM = 64
+# corrige le 21/09 : le vrai tiny.pth est 64-64-64-64-64-10, pas 64-256-256-256-64-10
+# (verifie via torch.load + inspection des shapes du state_dict)
 SHRINK = 64
 LAYERS = 5
 
@@ -62,7 +68,11 @@ model.eval()
 
 try:
     # Charger les poids depuis les fichiers PyTorch si existants
-    pth_path = "signature_recovery/models/tiny.pth"
+    # (chemin corrige le 21/09 : le vrai modele vit dans le sous-module Git,
+    # pas a cote de ce script depuis la consolidation)
+    _repo_root = os.path.join(os.path.dirname(__file__), "..", "..",
+                               "external", "hard-label-dnn-extraction")
+    pth_path = os.path.join(_repo_root, "signature_recovery", "models", "tiny.pth")
     if os.path.exists(pth_path):
         model.load_state_dict(torch.load(pth_path, map_location='cpu', weights_only=True))
         print(f"✓ Modèle chargé depuis: {pth_path}")

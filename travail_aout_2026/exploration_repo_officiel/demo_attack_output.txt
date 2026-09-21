@@ -1,0 +1,162 @@
+
+=====================================================================================
+ ⚡ DÉMONSTRATION - Attaque d'Extraction Hard-Label DNN
+=====================================================================================
+
+[STEP 1] Configuration du modèle
+-------------------------------------------------------------------------------------
+✓ Classe CIFAR10Net définie
+  Architecture: 64 → 64 → 64 → 64 → 64 → 10
+
+[STEP 2] Chargement du modèle
+-------------------------------------------------------------------------------------
+✓ Modèle chargé depuis: D:\thése\these\travail_aout_2026\exploration_repo_officiel\..\..\external\hard-label-dnn-extraction\signature_recovery\models\tiny.pth
+
+Statistiques du modèle:
+  • Nombre total de paramètres: 17,290
+  • Nombre de couches: 10 couches de poids
+    fc1.weight: (64, 64)
+    fc2.weight: (64, 64)
+    fc3.weight: (64, 64)
+    fc4.weight: (64, 64)
+    fc5.weight: (10, 64)
+
+[STEP 3] Test d'inférence
+-------------------------------------------------------------------------------------
+✓ Entrée de test générée (shape: torch.Size([10, 64]))
+✓ Sortie du modèle (shape: torch.Size([10, 10]))
+
+Exemples de prédictions (logits):
+  Exemple 1: [-0.08847478 -0.08428002  0.0260153   0.03367323 -0.07095945  0.09369271
+ -0.10089848  0.10268672 -0.12319425 -0.03012257]
+  Exemple 2: [-0.07100421 -0.09374613  0.02933196  0.04047455 -0.06948139  0.0928719
+ -0.11012432  0.10618534 -0.14135616 -0.03257623]
+  Exemple 3: [-0.0778403  -0.09760834  0.03309687  0.03798151 -0.06211402  0.08523773
+ -0.09481453  0.09908182 -0.13050603 -0.04443261]
+
+Classes prédites: [7 7 7 7 7 7 7 7 7 5]
+
+[STEP 4] Analyse - Frontière de décision
+-------------------------------------------------------------------------------------
+
+Concept clé de l'attaque:
+• Les points DUAUX sont sur la frontière entre classes
+• Ils servent de "signaux" pour inverser les poids
+• L'attaque les exploite pour extraire les neurones
+
+Simulation:
+
+Génération de 100 points aléatoires...
+✓ Points générés: 100
+  • Points avec MARGE FAIBLE (proches de la frontière):
+    Point 55: margin=0.0001, classe=7
+    Point 39: margin=0.0001, classe=5
+    Point 24: margin=0.0003, classe=5
+    Point 11: margin=0.0005, classe=5
+    Point 94: margin=0.0006, classe=5
+
+  • Points avec MARGE LARGE (loin de la frontière):
+    Point 10: margin=0.0306, classe=5
+    Point 83: margin=0.0318, classe=5
+    Point 73: margin=0.0336, classe=7
+    Point 4: margin=0.0415, classe=7
+    Point 90: margin=0.0440, classe=7
+
+[STEP 5] Analyse - Distance de Patch
+-------------------------------------------------------------------------------------
+
+Concept clé:
+• Distance de patch = changement de prédiction avec petite perturbation
+• Varie selon si un neurone cible est ON ou OFF
+• Permet de statistiquement déduire le signe du neurone
+
+Point de test: torch.Size([1, 64])
+Prédiction originale: classe 7
+
+Taux de changement de classe avec perturbations aléatoires (50 essais):
+  Perturbation σ=0.01:   0.0% changements de classe
+  Perturbation σ=0.05:   0.0% changements de classe
+  Perturbation σ= 0.1:   0.0% changements de classe
+  Perturbation σ= 0.2:   0.0% changements de classe
+
+[STEP 6] Analyse des activations internes
+-------------------------------------------------------------------------------------
+Activations par couche (exemple pour un point):
+  fc1_out   :  33 neurones ON,   0 neurones OFF
+  fc2_out   :  36 neurones ON,   0 neurones OFF
+  fc3_out   :  35 neurones ON,   0 neurones OFF
+  fc4_out   :  30 neurones ON,   0 neurones OFF
+
+[STEP 7] 📊 RÉSUMÉ - Comment l'attaque fonctionne
+-------------------------------------------------------------------------------------
+
+1️⃣  PHASE 1 - SIGNATURE RECOVERY (récupère les formes des poids)
+    ├─ Trouver les POINTS DUAUX (sur les frontières)
+    ├─ Clusteriser par rapport à quel neurone = 0
+    └─ Résoudre les systèmes linéaires → vecteurs de poids
+
+2️⃣  PHASE 2 - SIGN RECOVERY (récupère les signes des neurones)
+    ├─ Pour chaque neurone cible:
+    │  ├─ Faire marcher depuis le point dual dans deux directions
+    │  ├─ Mesurer les "patch distances" (distances de changement)
+    │  ├─ ON : patch distance en moyenne ~5% plus grande
+    │  └─ OFF : patch distance en moyenne ~5% plus petite
+    └─ Test statistique → déduire le signe
+
+3️⃣  RÉSULTAT FINAL
+    └─ Tous les poids signés et correctement identifiés
+    
+Pourquoi c'est remarquable:
+  • SANS accès aux logits (probabilités)
+  • SANS accès aux activations internes
+  • AVEC SEULEMENT les prédictions (hard-label)
+  • Temps polynomial en théorie et pratique
+
+
+[STEP 8] 🔑 Points clés de l'attaque
+-------------------------------------------------------------------------------------
+
+INSIGHTS MATHÉMATIQUES:
+  
+  1. Points duaux (x_d) satisfont:
+     • score_1(x_d) ≈ score_2(x_d) (équilibre entre classes)
+     • ∃ neurone l tel que W_l^T x_d ≈ 0 (traverse zéro)
+  
+  2. Différences de patch exploitables:
+     • Si neuron i est ON:  "marcher dans direction j" affecte plus
+     • Si neuron i est OFF: "marcher dans direction j" affecte moins
+     • Effet mesurable statistiquement
+  
+  3. Reconstruction:
+     • Points duaux + informations de signes → poids complets
+     • Via algèbre linéaire et optimisation
+     
+IMPLICATIONS DE SÉCURITÉ:
+  ⚠️  Les APIs hard-label (seulement prédictions) peuvent être cassées
+  → Il ne faut jamais exposer même les décisions brutes sans protection
+  → Rate limiting, monitoring, etc. sont essentiels
+
+
+=====================================================================================
+✅ DÉMONSTRATION COMPLÈTE
+=====================================================================================
+
+Vous avez vu comment:
+  1. Le modèle neural charge et fonctionne
+  2. Les points à frontière sont identifiés
+  3. Les patch distances varient avec les activations
+  4. L'attaque peut en extraire les poids
+
+Pour exécuter la vraie attaque:
+  
+  1. Télécharger les points duaux précomputes
+  2. cd sign_recovery
+  3. python batched_sign_recovery.py (ou sign_recovery.py pour tester)
+  4. python create_tables.py (pour analyser les résultats)
+
+Referencias:
+  • https://github.com/Jchavezsaab/hard-label-dnn-extraction
+  • EUROCRYPT 2024 Paper
+
+
+
