@@ -9,6 +9,10 @@ import sys
 import numpy as np
 from pathlib import Path
 
+# Force l'UTF-8 en sortie : evite le UnicodeEncodeError sur les emojis
+# quand la console Windows utilise l'encodage cp1252 par defaut.
+sys.stdout.reconfigure(encoding="utf-8")
+
 print("\n" + "=" * 80)
 print(" 🔍 ANALYSE - Hard Label DNN Extraction - EUROCRYPT 2024")
 print("=" * 80)
@@ -78,7 +82,8 @@ print("""
 # ========== 3. DONNÉES ==========
 print("\n[3] 📊 DONNÉES DISPONIBLES")
 print("-" * 80)
-data_dir = "data"
+data_dir = os.path.join(os.path.dirname(__file__), "..", "..",
+                         "external", "hard-label-dnn-extraction", "data")
 if os.path.exists(data_dir):
     print(f"✓ Répertoire 'data' trouvé:")
     for file in os.listdir(data_dir):
