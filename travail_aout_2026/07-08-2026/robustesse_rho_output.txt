@@ -1,0 +1,20 @@
+ seed    relu(rho)   gelu(rho)   silu(rho)   tanh(rho)
+-----------------------------------------------------
+    7        0.023       0.913       0.622       1.039
+   17        0.004       0.836       0.677       0.605
+   27        0.005       0.832       0.958       0.406
+   37        0.010       0.443       0.848       0.490
+   47        0.025       0.526       0.796       0.842
+
+Classement du meilleur (rho le plus bas) au pire, par graine de reseau :
+  seed 7: relu < silu < gelu < tanh
+  seed 17: relu < tanh < silu < gelu
+  seed 27: relu < tanh < gelu < silu
+  seed 37: relu < gelu < tanh < silu
+  seed 47: relu < gelu < silu < tanh
+
+Rho median sur les 5 graines, par activation :
+  relu     median=0.010  min=0.004  max=0.025
+  gelu     median=0.832  min=0.443  max=0.913
+  silu     median=0.796  min=0.622  max=0.958
+  tanh     median=0.605  min=0.406  max=1.039

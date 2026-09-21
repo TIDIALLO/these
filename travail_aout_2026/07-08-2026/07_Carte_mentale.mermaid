@@ -1,0 +1,96 @@
+mindmap
+  root((Extraction<br/>cryptanalytique<br/>de DNN))
+    Le cadre
+      Analogie crypto
+        Couche lineaire = addition de cle
+        ReLU = S-box
+        Profondeur = nb de tours
+        Poids = cle secrete
+      Modeles d oracle
+        raw-output : les logits
+        top-k : les k meilleures
+        hard-label : la classe seule
+      Deux extractions a ne pas confondre
+        Fonctionnelle : modele substitut
+        Exacte : les parametres eux-memes
+        ::icon(fa fa-exclamation)
+    Ce qui rend l attaque possible
+      ReLU affine par morceaux
+        Regions polyedriques
+        Frontieres = hyperplans
+      Point critique
+        Un neurone vaut zero
+        Revele A.x + b = 0
+        Invisible en hard-label
+      Point de transition
+        Deux logits egaux
+        Seul evenement visible en hard-label
+      Point dual
+        Critique ET transition
+        Le pont entre les deux
+    Lignee des attaques
+      CRYPTO 2020
+        Attaque differentielle
+        Signature par difference de gradient
+        Signe exponentiel
+      EUROCRYPT 2024
+        Neuron wiggle
+        Signe polynomial
+        Echoue sur neurones faible confiance
+      ASIACRYPT 2024
+        Premier hard-label
+        n+1 motifs d activation
+        Temps exponentiel
+      EUROCRYPT 2025
+        Hard-label polynomial
+        Marche sur la frontiere
+        Laisse la couche de sortie
+      LATINCRYPT 2025
+        Article de depart
+        Couche de sortie par systeme lineaire
+        d_r + 2 degres de liberte
+        Bilan : tout le temps part en recherche de transitions
+    Vague 2026
+      Au-dela de ReLU
+        2026/253 activations lisses en raw-output
+        2026/178 PL variees et activations composites
+        2026/1066 PReLU en HARD-LABEL
+      Architectures
+        2026/902 CNN average pooling hard-label
+        2026/719 GNN hard-label
+      Efficacite
+        2026/1164 methode ASV sans SVD
+        2026/1025 criblage sans clustering
+      Critique
+        Ito Miura Todo : vraiment polynomial ?
+        Neurones quasi toujours actifs
+    Defenses
+      Train to Defend 2025
+        Regularisation a l entrainement
+        Supprime l unicite des neurones
+        Vise le raw-output
+      Restent ouvertes
+        Defense au deploiement
+        Cibler la precision 10^-13
+        Le choix de l activation
+        Bruit adaptatif sur la frontiere
+    La these
+      Question centrale
+        Hard-label x activations lisses
+        La case vide du tableau
+      WP2 valide
+        Theoreme independant de l activation
+        Rang 32/32 accord 5000/5000
+        Bonus : ambiguite de signe multi-sorties
+      WP3 hypothese refutee
+        Taxonomie A B C non predictive
+        Le fosse est la non-differentiabilite
+        ReLU rho 0.01 vs lisses rho > 0.38
+      Prochaines experiences
+        E1 resolution du pas de marche
+        E2 montee en dimension
+        E3 echelle des poids
+      Verrous a lever
+        Que devient le point critique chez GELU
+        Courbure = tenseur en grande dimension
+        Precision flottante
