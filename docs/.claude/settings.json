@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"d:/thése/these\" && find . -maxdepth 3 -type d | grep -v '.git' )",
+      "Read(//d/thése/these/**)",
+      "Bash(.venv/Scripts/python.exe -c \"import numpy, torch; print\\('ok', numpy.__version__, torch.__version__\\)\")",
+      "Bash(.venv/Scripts/python.exe -m pip install numpy matplotlib torch --quiet)",
+      "Read(//d/thése/these/cahier_de_these/TP/code/**)",
+      "Bash(../../../.venv/Scripts/python.exe tp3_signature.py)",
+      "Bash(../../../.venv/Scripts/python.exe tp6_beyond_relu.py)",
+      "Bash(../../../.venv/Scripts/python.exe tp7_defense.py)"
+    ]
+  }
+}
