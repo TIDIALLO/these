@@ -48,7 +48,7 @@
   - Disponible gratuitement: https://www.deeplearningbook.org/
 
 #### Code de référence
-```python
+```python 
 # micrograd de Karpathy
 # https://github.com/karpathy/micrograd
 ```
