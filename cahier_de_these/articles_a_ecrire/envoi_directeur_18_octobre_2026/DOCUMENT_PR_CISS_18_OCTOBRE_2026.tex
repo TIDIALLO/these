@@ -1,0 +1,183 @@
+\documentclass[11pt]{article}
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{french}
+\setmainfont{Latin Modern Roman}
+
+\usepackage[margin=2.8cm]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\title{\vspace{-1.5cm}Document pour Pr. Abdoul Aziz Ciss\\\large préparation de l'Article 1}
+\author{Tidiane Diallo}
+\date{Suite à la réunion du 18 octobre 2026}
+
+\begin{document}
+\maketitle
+
+\section*{0. Ce que contient ce document}
+
+Vous m'avez demandé de vous envoyer un document et les tests, pour préparer le premier article. Je reprends ici les deux résultats présentés en réunion. Pour chacun : le problème posé, la méthode suivie, le protocole, puis les chiffres, mesurés aujourd'hui et non repris d'une exécution plus ancienne, et enfin les limites, sans les enjoliver. Le code et la sortie brute de chaque exécution se trouvent dans le dossier \texttt{logs/}, détaillé en section 4.
+
+Les deux résultats n'ont pas la même maturité. Le résultat A est vérifié et stable. Le résultat B reste un premier prototype, avec des limites que j'énonce clairement. C'est volontairement que je les présente dans cet ordre.
+
+\section*{1. Résultat A --- la couche de sortie se récupère indépendamment de l'activation des couches cachées}
+
+\subsection*{Le problème}
+
+Carlini et al. (EUROCRYPT 2025) récupèrent toutes les couches d'un réseau ReLU en hard-label, sauf la couche de sortie. Elle n'a pas d'activation, donc aucun coude à exploiter. Mon article de départ, Canales-Martínez et Santos (2025), comble ce trou, mais seulement dans un cadre où le reste du réseau reste ReLU. La question que je teste ici est simple à poser : la méthode de récupération de la couche de sortie dépend-elle vraiment de ReLU, ou seulement du softmax final ?
+
+\subsection*{La méthode}
+
+La récupération repose sur trois hypothèses, posées à un point de transition entre deux classes $i$ et $j$ :
+
+\begin{itemize}[leftmargin=2.2em]
+  \item[(H1)] $A_i \cdot y + b_i = A_j \cdot y + b_j$, où $y$ est l'entrée de la couche de sortie.
+  \item[(H2)] $y = f_{1..r}(x)$ est calculable, c'est-à-dire que les couches cachées sont déjà connues.
+  \item[(H3)] la fonction de décision (softmax) est invariante par translation et préserve l'ordre des scores.
+\end{itemize}
+
+Aucune des trois ne mentionne l'activation des couches cachées : (H3) ne dépend que du softmax final. Si cela tient, la méthode doit fonctionner à l'identique quelle que soit cette activation, ReLU, GELU, SiLU ou tanh, dès que (H2) est satisfaite.
+
+\textbf{Protocole.} Réseau \texttt{24-20-16-8-4} (profondeur 4, 4 classes en sortie), construit avec la même architecture et la même graine (\texttt{seed=5}) pour les quatre activations testées. L'attaquant dispose de l'oracle hard-label et suppose les couches \texttt{1..r} déjà extraites, l'hypothèse H2, posée ici explicitement. Il collecte des points de transition, résout le système linéaire qui en découle, puis corrige l'ambiguïté de signe global avec une seule requête supplémentaire.
+
+\subsection*{Résultats mesurés le 18 octobre 2026 (seed = 5)}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+Activation & Rang atteint & Écart max & Facteur d'échelle $c$ & Accord avant & Accord après \\
+\midrule
+ReLU & 26/26 & 4,297 × 10$^{-14}$ & $-2{,}035713$ (négatif) & 0/5000 & 5000/5000 \\
+GELU & 26/26 & 1,306 × 10$^{-13}$ & $-2{,}831870$ (négatif) & 0/5000 & 5000/5000 \\
+SiLU & 26/26 & 2,132 × 10$^{-14}$ & $-4{,}920914$ (négatif) & 0/5000 & 5000/5000 \\
+tanh & 26/26 & 6,217 × 10$^{-15}$ & $0{,}548012$ (positif) & 5000/5000 & 5000/5000 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.3em}
+\begin{tabular}{lcc}
+\toprule
+Activation & Requêtes totales & Temps \\
+\midrule
+ReLU & 16\,583 & 8,1 s \\
+GELU & 16\,581 & 16,4 s \\
+SiLU & 16\,589 & 9,3 s \\
+tanh & 16\,577 & 8,4 s \\
+\bottomrule
+\end{tabular}
+\end{table}
+\par\noindent\small\textit{L'accord après correction est mesuré sur 5000 entrées uniformes et 5000 entrées gaussiennes, dans les deux cas 5000/5000 pour les quatre activations.}\normalsize\par
+
+\textbf{Lecture.} Le rang atteint, 26 sur 26, le maximum théorique pour cette architecture, et l'écart résiduel, de l'ordre de $10^{-13}$ à $10^{-15}$, proche de la précision machine, sont identiques pour les quatre activations. Pour ReLU, GELU et SiLU, le facteur d'échelle global $c$ ressort négatif : la méthode reconstruit alors le réseau « à l'envers », d'où un accord de 0/5000 avant correction, bien en dessous du hasard à 25~\%. C'est la signature attendue d'une inversion de convention, pas un échec, et une seule requête supplémentaire suffit à la détecter et à la corriger. Pour tanh, $c$ ressort positif d'emblée, donc aucune correction n'est nécessaire. Après correction, l'accord est parfait sur les deux distributions de test, pour les quatre activations.
+
+Le coût en requêtes et en temps est, lui, quasi identique entre les quatre activations. La quasi-totalité du coût est dans la recherche des points de transition, qui est strictement la même opération quelle que soit l'activation cachée. Cela confirme que cette étape ne regarde que la couche de sortie.
+
+\subsection*{Limites honnêtes}
+
+\begin{itemize}
+  \item Le résultat suppose les couches cachées \texttt{1..r} déjà connues (hypothèse H2). Ce n'est pas encore une attaque de bout en bout sur un réseau dont tout est inconnu.
+  \item Testé sur un seul réseau jouet par activation, une seule graine. Le réseau CIFAR-10 réel de l'article de départ n'a pas encore été rejoué avec cette méthode.
+  \item L'ambiguïté de signe global en sortie multi-classes, étape 8 du script, va au-delà de ce que traite l'article de départ, qui ne discute ce cas que pour la sortie binaire. C'est une observation qui mériterait d'être vérifiée plus formellement avant d'être présentée comme un résultat à part entière.
+\end{itemize}
+
+\section*{2. Résultat B --- extraction hard-label de neurones non-ReLU (premier prototype, TP8)}
+
+\subsection*{Le problème}
+
+Les attaques hard-label existantes, celles de Carlini 2025 et de mon article de départ, sont construites pour ReLU. La question que je pose est la suivante : la même primitive géométrique, qui consiste à balayer des droites voisines autour d'un point de la frontière de décision pour repérer où cette frontière se plie, fonctionne-t-elle sans modification quand l'activation cachée a un coude non nul (Leaky ReLU, PReLU), ou même plus de coude du tout, ce qui est en partie le cas pour ELU ?
+
+\subsection*{La méthode}
+
+Trois étapes, codées dans \texttt{tp8\_hardlabel\_beyond\_relu.py} :
+
+\begin{enumerate}
+  \item \textbf{Détection de pli.} Le long d'une droite proche d'un point de frontière déjà trouvé, on cherche où la position de la frontière, en fonction du décalage, change brusquement de pente. Ce changement révèle un point situé exactement sur l'hyperplan d'un neurone caché. C'est le même principe que pour ReLU, mais rien dans le calcul ne suppose que l'activation en soit une.
+  \item \textbf{Ajustement d'hyperplan robuste.} Plusieurs points de pli trouvés près du même germe sont assemblés par moindres carrés, avec un rejet des points aberrants, une forme légère de RANSAC, pour reconstruire la direction du neurone.
+  \item \textbf{Mesure d'un ratio de pente bilatéral}, une piste empirique pour estimer la pente négative propre à chaque activation. Je la présente comme une observation, pas comme un estimateur validé : la raison précise est expliquée dans la note en bas du fichier de code.
+\end{enumerate}
+
+\textbf{Protocole.} Réseau jouet à 3 entrées, 4 neurones cachés, 2 sorties, même graine réseau (\texttt{seed=7}) pour les quatre activations testées, même graine d'attaque (\texttt{seed=3}). Oracle hard-label uniquement, aucun accès aux logits.
+
+\subsection*{Résultats mesurés le 18 octobre 2026}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+Activation & Neurones retrouvés / 4 & Cosinus moyen & Requêtes & Temps \\
+\midrule
+ReLU & 3 & 0,9785 & 351\,647 & 11,7 s \\
+Leaky ReLU ($\alpha$ vrai = 0,1) & 1 & 0,9792 & 413\,740 & 17,7 s \\
+PReLU ($\alpha$ vrai = 0,25) & 3 & 0,6858 & 508\,247 & 22,4 s \\
+ELU & 0 & --- & 466\,147 & 23,2 s \\
+\bottomrule
+\end{tabular}
+\end{table}
+\par\noindent\small\textit{Cosinus moyen avec la vraie direction, quand un neurone a pu être retrouvé.}\normalsize\par
+
+\textbf{Lecture.} Quand la méthode trouve un neurone, la direction retrouvée est très proche de la vraie direction pour ReLU et Leaky ReLU, avec un cosinus proche de 0,98. Cela montre que la primitive fonctionne bien au-delà de ReLU dans son principe. Pour PReLU, la précision est nettement plus faible, 0,69. Pour ELU, aucun neurone n'a pu être retrouvé dans ces réglages : sa partie négative n'est pas linéaire, donc la frontière de décision y est légèrement courbe au lieu d'être plate, ce qui casse l'hypothèse de base de la méthode.
+
+\subsection*{Limites honnêtes}
+
+\begin{itemize}
+  \item Une seule graine réseau testée. Les résultats peuvent varier fortement d'un réseau à l'autre, en particulier pour PReLU, où la variance observée précédemment était grande.
+  \item Il existe un compromis net entre le rayon local de recherche, le taux de neurones retrouvés et le nombre de requêtes : resserrer le rayon améliore la précision mais fait chuter le taux de réussite et multiplie le coût par 10 à 100. Ce compromis n'est pas encore caractérisé formellement.
+  \item Le ratio de pente bilatéral, la piste pour estimer $\alpha$, n'est pas un estimateur démontré. Le calcul montre qu'il mélange la pente propre au neurone et le comportement du reste du réseau autour de lui, exactement l'ambiguïté d'échelle que Carlini 2020 traite séparément pour le signe.
+  \item Aucune reconstruction complète d'un réseau, aucune expérience sur CIFAR-10.
+\end{itemize}
+
+\section*{3. Ce que ça donne pour l'Article 1}
+
+Le résultat A est aujourd'hui le plus solide des deux : chiffres stables, écart proche de la précision machine, comportement identique sur quatre activations. C'est un candidat direct pour une section d'article, voire pour une prépublication ePrint à part, qui daterait la contribution avant que quelqu'un d'autre ne publie la même généralisation.
+
+Le résultat B est la direction la plus proche de ma contribution 1 annoncée, « Hard-Label Extraction Beyond ReLU », mais il reste à un stade de prototype. Un point important découvert cette semaine, en dehors de ce document : un travail de 2026, Qi et al., ePrint 2026/178, publié dans ToSC, revendique déjà le hard-label sur PReLU. Avant d'investir davantage de temps sur le résultat B, je dois lire ce travail en entier pour savoir ce qu'il reste réellement à faire.
+
+\section*{4. Les tests (code et sortie brute)}
+
+Chaque résultat est accompagné du script qui l'a produit et du journal complet de son exécution d'aujourd'hui, pas d'un résumé.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{3.6cm}p{6.2cm}p{3.2cm}}
+\toprule
+Résultat & Script & Log \\
+\midrule
+A --- couche de sortie, ReLU & \verb|attaque_couche_sortie.py --activation relu --seed 5| & \texttt{logs/couche\_sortie\_relu.txt} \\
+A --- couche de sortie, GELU & même script, \verb|--activation gelu| & \texttt{logs/couche\_sortie\_gelu.txt} \\
+A --- couche de sortie, SiLU & même script, \verb|--activation silu| & \texttt{logs/couche\_sortie\_silu.txt} \\
+A --- couche de sortie, tanh & même script, \verb|--activation tanh| & \texttt{logs/couche\_sortie\_tanh.txt} \\
+B --- hard-label non-ReLU (4 activations) & \texttt{tp8\_hardlabel\_beyond\_relu.py} & \texttt{logs/tp8\_hardlabel\_beyond\_relu.txt} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Pour rejouer : \verb|python attaque_couche_sortie.py --activation <nom> --seed 5 --sans-diagnostic| depuis \texttt{travail\_aout\_2026/07-08-2026/}, ou \texttt{python tp8\_hardlabel\_beyond\_relu.py} depuis \texttt{cahier\_de\_these/TP/code/}. Les deux scripts fixent leurs graines : les chiffres ci-dessus se reproduisent à l'identique.
+
+\section*{5. Questions ouvertes pour la prochaine étape}
+
+\begin{enumerate}
+  \item Le résultat A part-il en prépublication ePrint maintenant, séparément du reste ?
+  \item Dois-je lire Qi et al. (2026/178) en entier avant de continuer le résultat B, ou continuer en parallèle ?
+  \item Le réseau CIFAR-10 réel de l'article de départ doit-il être la prochaine cible pour le résultat A, avant d'élargir le résultat B ?
+\end{enumerate}
+
+\bigskip
+\noindent\textit{Document préparé le 18 octobre 2026, à partir d'exécutions réelles des scripts cités : aucun chiffre n'a été repris de mémoire d'une exécution antérieure.}
+
+\end{document}

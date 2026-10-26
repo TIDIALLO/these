@@ -1,0 +1,35 @@
+==============================================================================
+CONTRIBUTION 1 — hard-label, activations PAR MORCEAUX non-ReLU
+==============================================================================
+activation    trouves  |cos| moyen  ratio moyen   requetes  temps (s)
+---------------------------------------------------------------------
+relu            3/4         0.9785       0.0885     351647       11.7   (alpha vrai=0.0)
+leaky_relu      1/4         0.9792          nan     413740       17.7   (alpha vrai=0.1)
+prelu           3/4         0.6858          nan     508247       22.4   (alpha vrai=0.25)
+elu             0/4            nan          nan     466147       23.2   (alpha non constant)
+
+Lecture : |cos| proche de 1 => l'hyperplan du neurone (direction W1[i])
+est retrouve EN HARD-LABEL, pour ReLU comme pour Leaky/PReLU (et, plus
+bruite, ELU) -- c'est la reproduction+extension visee par la contribution 1.
+Le 'ratio moyen' est le ratio de pente bilateral (piste alpha) : a comparer
+qualitativement à alpha_vrai, PAS a prendre comme un estimateur exact (cf. note).
+
+==============================================================================
+CONTRIBUTION 2 (premier probe) — frontiere hard-label, activations LISSES
+==============================================================================
+activation  famille         concentration  lignes ok
+----------------------------------------------------
+relu        par morceaux           0.8568          5
+leaky_relu  par morceaux           1.0000          5
+sigmoid     lisse                     nan          0
+tanh        lisse                  0.3269          5
+gelu        lisse                  0.2449          5
+
+Lecture : concentration proche de 1 => pli net (par morceaux). Concentration
+basse/etalee => pas de pli net (lisse) -- MEME MESURE que TP6(C), mais calculee
+ICI uniquement depuis l'oracle hard-label (aucun logit). C'est un signal de
+faisabilite pour B2, PAS encore une recuperation de poids pour l'activation lisse.
+
+Temps total du script : 75.6 s
+
+Note de complexite (esquisse) et limites honnetes : voir le bas de ce fichier.
