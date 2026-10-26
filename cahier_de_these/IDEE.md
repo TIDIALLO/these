@@ -131,3 +131,30 @@ Ces trois forment naturellement les **trois chapitres de contribution** de la th
   **Prochaine étape :** caractériser le compromis rayon/requêtes/précision
   sur plusieurs seeds réseau (un seul seed testé ici) avant de considérer la
   contribution 1 "solide" ; creuser pourquoi ELU échoue systématiquement.
+
+- **2026-10-25 — suite (TP8b, `tp8b_multiseed_et_elu.py`).** Les deux points
+  laissés ouverts le 29/09 sont maintenant mesurés, sur 5 graines réseau
+  (7, 11, 23, 42, 100), même graine d'attaque, mêmes réglages (rayon serré).
+  Résultats bruts dans `resultats_tp8b_multiseed_25_octobre_2026.txt`.
+  **La variance inter-graines est forte, plus forte que prévu :** ReLU
+  trouve 1 à 3 neurones sur 4 selon la graine (|cos| moyen 0.82 ± 0.15,
+  jusqu'à 0.57 sur la graine 23) ; Leaky ReLU va de 0/4 à 4/4 selon la
+  graine (0 neurone trouvé sur 2 des 5 graines testées !) ; PReLU va de 0/4
+  à 4/4 aussi. Le chiffre "0.98 pour Leaky ReLU" du document du 18 octobre
+  vient d'une seule graine (seed=7) qui n'est clairement pas représentative
+  de la moyenne — la limite "les résultats peuvent varier fortement d'une
+  graine à l'autre" écrite ce jour-là était donc justifiée, et elle est
+  maintenant confirmée par la mesure, pas juste par prudence.
+  **ELU : diagnostic tranché.** Sur 40 tentatives par graine, la frontière
+  de décision est trouvée dans 40 à 65 % des cas (16 à 26 / 40), donc le
+  hard-label fonctionne normalement pour localiser la frontière. Mais un
+  pli net n'y est détecté que 0 ou 1 fois sur 40, sur les 5 graines. Le
+  blocage n'est donc pas "on ne trouve pas la frontière", mais "la
+  frontière ELU n'a presque jamais le coude nécessaire au germe initial" —
+  cohérent avec la partie négative courbe (non linéaire) d'ELU, qui étale
+  le pli au lieu de le concentrer en un point.
+  **Conséquence pour l'Article 1 :** le compromis rayon/précision/requêtes
+  annoncé comme "la money plot" le 29/09 doit maintenant intégrer une
+  troisième dimension, la variance inter-graines, qui est au moins aussi
+  grande que l'effet du rayon. Ne pas présenter de chiffre "|cos| ≈ 0.98"
+  sans préciser sur combien de graines il tient.
