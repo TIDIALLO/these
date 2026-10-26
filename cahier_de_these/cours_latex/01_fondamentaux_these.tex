@@ -1,0 +1,180 @@
+\documentclass[11pt]{article}
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{french}
+\setmainfont{Latin Modern Roman}
+
+\usepackage[margin=2.8cm]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable}
+
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.6em}{}
+
+\newtcolorbox{exo}[1]{breakable, colback=white, colframe=black!60, boxrule=0.5pt,
+  arc=1pt, title=Exercice~#1, fonttitle=\bfseries, coltitle=black}
+\newtcolorbox{sol}{breakable, colback=black!3, colframe=black!30, boxrule=0.3pt,
+  arc=1pt, title=Solution, fonttitle=\bfseries\itshape, coltitle=black!50!black}
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\title{Cours 1 : fondamentaux et repères de la thèse\\[0.3em]\large Où se situe exactement le sujet, et comment s'y orienter}
+\author{Tidiane Diallo}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{Où se situe exactement ce sujet}
+
+« Deep learning et cybersécurité » décrit le sujet de façon trop large pour être utile. La case précise est beaucoup plus étroite : l'\textbf{extraction cryptanalytique de paramètres} de réseaux de neurones profonds, et les défenses qui s'y opposent. C'est une sous-branche de la sécurité des modèles de machine learning, qui emprunte ses outils à la cryptanalyse différentielle classique.
+
+Trois précisions évitent les confusions les plus fréquentes.
+
+\begin{itemize}
+  \item Ce n'est pas de la sécurité réseau ni du piratage au sens courant du métier. C'est l'étude d'un modèle déjà entraîné, traité comme une fonction mathématique à reconstruire.
+  \item Ce n'est pas du deep learning appliqué, au sens où l'on chercherait à entraîner de meilleurs modèles. On analyse la sécurité de modèles qui existent déjà.
+  \item Ce n'est pas du vol de modèle par imitation (entraîner un clone sur les réponses d'un modèle, comme Knockoff Nets). L'extraction visée ici est \textbf{exacte}, à équivalence fonctionnelle près, obtenue par des méthodes algébriques et géométriques, pas par apprentissage.
+\end{itemize}
+
+\subsection{L'analogie fondatrice}
+
+Depuis Carlini, Jagielski et Mironov (CRYPTO 2020), tout le domaine repose sur une analogie structurelle entre un réseau de neurones et un chiffrement par blocs.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+Chiffrement par blocs & Réseau de neurones \\
+\midrule
+Tours successifs & Couches successives \\
+Opération linéaire sur clé secrète & $A^{(i)}x + b^{(i)}$, poids secrets \\
+S-box (non-linéarité publique) & Activation $\sigma$ (ReLU, GELU...), publique \\
+Attaque différentielle à clairs choisis & Requêtes $x$, $x+\Delta$ et analyse des différences \\
+Récupérer la clé & Récupérer les poids $\theta$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+C'est cette analogie qui justifie que le sujet relève de conférences de cryptographie (EUROCRYPT, CRYPTO, ASIACRYPT) et non seulement de conférences de machine learning. Les outils de la cryptanalyse s'appliquent littéralement : attaques différentielles, épluchage couche par couche (l'analogue du \emph{peeling} d'un chiffrement itératif).
+
+\section{Le vocabulaire de référence}
+
+Ces termes reviennent dans tous les articles du domaine. Les fixer une fois pour toutes évite de les redériver à chaque lecture.
+
+\begin{description}
+  \item[Oracle / boîte noire] On envoie une entrée $x$, on reçoit une sortie, sans jamais voir les poids.
+  \item[Raw-output (logits)] L'oracle renvoie le vecteur de scores réels en entier. Le régime le plus riche, le moins réaliste.
+  \item[Hard-label] L'oracle ne renvoie que la classe prédite, $\mathrm{argmax}$ de la sortie. Le régime le plus pauvre en information, le plus proche des API réelles.
+  \item[Signature] La direction du vecteur de poids d'un neurone, à un facteur multiplicatif près. Géométriquement, la normale à son hyperplan critique.
+  \item[Signe] Le signe de ce facteur. La signature seule ne suffit pas à reconstruire le neurone : ReLU$(w\cdot x) \ne$ ReLU$(-w\cdot x)$.
+  \item[Peeling] Une fois une couche entièrement récupérée, on la retire mentalement du réseau pour attaquer la couche suivante comme un problème neuf, plus petit.
+  \item[Équivalence fonctionnelle] Le modèle extrait calcule exactement la même fonction que l'original, à des permutations de neurones et des facteurs d'échelle près. C'est l'objectif visé, plus fort qu'une simple bonne précision.
+\end{description}
+
+\begin{exo}{1}
+Sans relire la liste ci-dessus, explique en une phrase la différence entre signature et signe. Puis vérifie ta réponse.
+\end{exo}
+\begin{sol}
+La signature est la direction du vecteur de poids, obtenue à un facteur multiplicatif près ; le signe est précisément ce facteur, positif ou négatif, qu'il faut déterminer séparément parce que la non-linéarité (ReLU en particulier) ne traite pas symétriquement les deux signes.
+\end{sol}
+
+\section{Les cinq niveaux d'accès de l'attaquant}
+
+Du plus facile au plus dur pour l'attaquant (Jagielski et al., USENIX Security 2020) :
+
+\begin{enumerate}
+  \item Raw-output / logits : le vecteur de scores réel, en entier.
+  \item Probabilités complètes, après softmax.
+  \item Top-$k$ probabilités : les $k$ meilleures classes avec leurs scores.
+  \item Top-1 plus score de confiance.
+  \item \textbf{Hard-label} : uniquement l'étiquette de la classe la plus probable.
+\end{enumerate}
+
+Toujours annoncer ce niveau en premier dans un article : c'est la première question que pose un relecteur en cryptographie.
+
+\begin{exo}{2}
+Une API renvoie, pour chaque image envoyée, un seul mot : \texttt{"chat"}, \texttt{"chien"} ou \texttt{"oiseau"}, sans aucun score. À quel niveau de la liste ci-dessus correspond cet accès ? Une seconde API renvoie en plus un pourcentage de confiance sur la classe choisie. À quel niveau correspond-elle ?
+\end{exo}
+\begin{sol}
+La première API correspond au niveau 5, hard-label pur : un seul mot, aucune valeur numérique. La seconde correspond au niveau 4, top-1 plus score de confiance : une classe et un seul nombre associé, mais pas le vecteur complet des scores pour toutes les classes.
+\end{sol}
+
+\section{Les trois branches à maîtriser}
+
+Le sujet s'appuie sur deux socles disciplinaires distincts, qui se rencontrent dans un troisième champ propre à cette thèse.
+
+\subsection{Branche 1 : deep learning}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{0.5cm}p{7.5cm}p{6.5cm}}
+\toprule
+\# & Référence & Pourquoi \\
+\midrule
+1 & 3Blue1Brown, \emph{Neural Networks} (playlist) & Intuition visuelle du gradient, à voir en premier \\
+2 & Karpathy, \emph{Neural Networks: Zero to Hero} (micrograd) & Implémenter un autograd minimal soi-même \\
+3 & Goodfellow, Bengio, Courville, \emph{Deep Learning}, chap.~6 & Référence académique sur les réseaux à propagation avant \\
+4 & Hendrycks \& Gimpel, \emph{Gaussian Error Linear Units}, arXiv:1606.08415 & Papier original de GELU \\
+5 & Ramachandran et al., \emph{Searching for Activation Functions}, arXiv:1710.05941 & Papier original de SiLU/Swish \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Branche 2 : cryptographie et sécurité}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{0.5cm}p{7.5cm}p{6.5cm}}
+\toprule
+\# & Référence & Pourquoi \\
+\midrule
+1 & Dan Boneh, \emph{Cryptography I} (Stanford/Coursera), semaines 1--3 & Bases du chiffrement par blocs \\
+2 & Biham \& Shamir, \emph{Differential Cryptanalysis of DES-like Cryptosystems} (1990) & L'outil conceptuel central \\
+3 & Tramèr et al., \emph{Stealing Machine Learning Models via Prediction APIs}, USENIX 2016 & Le terrain plus large du vol de modèle \\
+4 & Jagielski et al., USENIX Security 2020 & Distinction fidélité / précision \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Branche 3 : le point de rencontre, le sujet lui-même}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{4.5cm}p{4.5cm}p{5.5cm}}
+\toprule
+Référence & Oracle & Apport \\
+\midrule
+Carlini, Jagielski, Mironov, CRYPTO 2020 & raw-output & Article fondateur, ReLU \\
+Canales-Martínez et al., EUROCRYPT 2024 & raw-output & Récupération de signe polynomiale \\
+Carlini et al., EUROCRYPT 2025 & hard-label & Hard-label en temps polynomial, sauf la couche de sortie \\
+Canales-Martínez \& Santos, 2025 & hard-label & Comble le trou de la couche de sortie, mon article de départ \\
+Kurian \& Aysu, NeurIPS 2025 & -- & Seule défense publiée \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{exo}{3}
+En une phrase, explique pourquoi la couche de sortie résiste aux méthodes construites pour les couches cachées ReLU.
+\end{exo}
+\begin{sol}
+La couche de sortie n'a pas d'activation, c'est une simple transformation affine ; les méthodes ReLU exploitent un coude (une non-différentiabilité), qui n'existe donc pas sur cette couche précise.
+\end{sol}
+
+\section{Pour aller plus loin}
+
+Ce cours fixe la carte générale. Le cahier de thèse contient, pour approfondir : 16 fiches de lecture détaillées (une par article cité ci-dessus et plus), une note sur six travaux supplémentaires de 2026, et un plan de thèse avec calendrier. Les cours 2 et 3 de cette série reprennent respectivement les réseaux de neurones profonds et la mécanique précise des attaques ReLU et au-delà.
+
+\end{document}

@@ -1,0 +1,177 @@
+\documentclass[11pt]{article}
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{french}
+\setmainfont{Latin Modern Roman}
+
+\usepackage[margin=2.8cm]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable}
+
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.6em}{}
+
+\newtcolorbox{exo}[1]{breakable, colback=white, colframe=black!60, boxrule=0.5pt,
+  arc=1pt, title=Exercice~#1, fonttitle=\bfseries, coltitle=black}
+\newtcolorbox{sol}{breakable, colback=black!3, colframe=black!30, boxrule=0.3pt,
+  arc=1pt, title=Solution, fonttitle=\bfseries\itshape, coltitle=black!50!black}
+\newtcolorbox{remarque}{breakable, colback=black!2, colframe=black!40, boxrule=0.4pt,
+  arc=1pt, title=À retenir, fonttitle=\bfseries, coltitle=black}
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\title{Cours 3 : ReLU, activations, softmax et extraction\\[0.3em]\large Du raw-output au hard-label, de ReLU à ses voisins}
+\author{Tidiane Diallo}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{ReLU et la géométrie affine par morceaux}
+
+Pour un neurone ReLU, $a=\max(0,z)$ avec $z=w\cdot x+b$ : le neurone est \emph{inactif} ($a=0$) si $z<0$, \emph{actif} ($a=z$) si $z>0$. L'ensemble des entrées qui rendent tous les neurones d'un même état forme une région de l'espace où le réseau entier se comporte comme une simple fonction affine. Les frontières entre régions sont les \textbf{hyperplans critiques} des neurones, $w\cdot x+b=0$.
+
+\begin{exo}{1}
+Pour un neurone ReLU de poids $w=(2,-3)$ et biais $b=1$, trouve le point $x=(t,t)$ (sur la droite des points à coordonnées égales) où ce neurone est exactement à son point critique. Le neurone est-il actif ou inactif en $x=(2,2)$~? En $x=(0,0)$~?
+\end{exo}
+\begin{sol}
+Point critique : $2t-3t+1=0 \Rightarrow -t+1=0 \Rightarrow t=1$, donc $x=(1,1)$.
+En $(2,2)$ : $z=2(2)-3(2)+1=4-6+1=-1<0$, inactif.
+En $(0,0)$ : $z=0-0+1=1>0$, actif.
+\end{sol}
+
+\section{Raw-output et hard-label}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llll}
+\toprule
+Régime & Ce que voit l'attaquant & Observable & Révèle \\
+\midrule
+Raw-output & Le vecteur de logits complet & Cassure de pente au point critique & Les poids du neurone \\
+Hard-label & Seulement $\mathrm{argmax}$ & Changement d'étiquette (point de transition) & Une relation entre logits \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{remarque}
+Un point de transition n'est pas, en général, un point critique : il indique où deux logits deviennent égaux, pas où un neurone caché bascule. Toute l'ingéniosité des attaques hard-label consiste à fabriquer des points critiques à partir de points de transition.
+\end{remarque}
+
+\section{Extraction en raw-output : signature et signe}
+
+\textbf{Carlini, Jagielski, Mironov (CRYPTO 2020).} Le long d'un segment, on repère où la pente de la sortie fait un saut brutal : c'est un point critique. La différence des gradients juste avant et juste après ce point donne la direction du poids du neurone, à un facteur près (la signature). Le signe de ce facteur, lui, doit être tranché séparément.
+
+\textbf{Canales-Martínez et al. (EUROCRYPT 2024).} Deux méthodes rendent la récupération du signe polynomiale plutôt qu'exponentielle. \emph{Freeze} : on construit deux entrées qui ne font varier que la pré-activation du neurone ciblé ; si la sortie ne bouge pas d'un côté, ce côté est le côté inactif. \emph{SOE} : un système linéaire résolu d'un coup pour toute la couche, en $0{,}22$ à $0{,}50$ seconde une fois la signature déjà connue.
+
+\section{Softmax, en détail}
+
+\[ s(u)_i = \frac{e^{u_i}}{\sum_j e^{u_j}} \]
+
+Deux propriétés gouvernent tout ce qui suit.
+
+\begin{enumerate}
+  \item \textbf{Invariance par translation.} $s(u+c\mathbf{1}) = s(u)$ pour toute constante $c$ ajoutée à toutes les coordonnées.
+  \item \textbf{Préservation de l'ordre pour $c>0$.} $s(cu)$ n'est pas égal à $s(u)$, mais pour $c>0$, la coordonnée la plus grande de $u$ reste la plus grande de $cu$. L'$\mathrm{argmax}$, c'est-à-dire le hard-label, est donc invariant par mise à l'échelle positive.
+\end{enumerate}
+
+\begin{exo}{2}
+Logits $u=(2,0,-1)$ pour 3 classes.
+\begin{enumerate}[label=(\alph*)]
+  \item Calcule $s(u)$.
+  \item Calcule $s(u+5\mathbf{1})$ et vérifie qu'il est identique à $s(u)$.
+  \item Calcule l'$\mathrm{argmax}$ de $2u$, puis de $-u$. Que remarques-tu ?
+\end{enumerate}
+\end{exo}
+\begin{sol}
+(a) $e^2\approx7{,}389$, $e^0=1$, $e^{-1}\approx0{,}368$, somme $\approx8{,}757$. $s(u)\approx(0{,}844\,;0{,}114\,;0{,}042)$.
+
+(b) $u+5\mathbf{1}=(7,5,4)$ : $e^7\approx1096{,}6$, $e^5\approx148{,}4$, $e^4\approx54{,}6$, somme $\approx1299{,}6$. Les trois ratios redonnent $(0{,}844\,;0{,}114\,;0{,}042)$, identiques.
+
+(c) $2u=(4,0,-2)$ : argmax reste la classe 1 (même ordre). $-u=(-2,0,1)$ : l'argmax devient la classe 3. Multiplier par un facteur \emph{négatif} inverse l'ordre des classes : c'est exactement le problème du signe (section 3) transposé à la couche de sortie.
+\end{sol}
+
+\subsection{Pourquoi ça permet de récupérer la couche de sortie en hard-label}
+
+À un point de transition entre deux classes $i$ et $j$, les deux scores de sortie sont égaux :
+\[ A_iy + b_i = A_jy + b_j \]
+où $y$ est l'entrée de la couche de sortie. Chaque point de transition donne une équation linéaire sur les paramètres inconnus $A,b$ de cette couche, sans jamais avoir besoin d'un coude à exploiter. Cette équation ne mentionne à aucun moment l'activation des couches cachées : c'est exactement pour ça que la méthode fonctionne quelle que soit cette activation, dès que $y$ est calculable.
+
+Sur le réseau CIFAR-10 de Canales-Martínez \& Santos (2025) : $d_r=64$ entrées de couche, $d_{r+1}=10$ classes, soit $650$ inconnues ; le rang maximal, une fois retirées les deux invariances ci-dessus (translation et échelle positive), tombe à $584$.
+
+\section{Extraction en hard-label sur ReLU : le point dual}
+
+\textbf{Carlini et al. (EUROCRYPT 2025).} L'idée qui débloque le temps exponentiel des tentatives précédentes : chercher un point à la fois sur la frontière de décision \emph{et} sur l'hyperplan critique d'un neurone précis, un \textbf{point dual}.
+
+\begin{enumerate}
+  \item Trouver un point de transition par recherche binaire entre deux entrées de classes différentes.
+  \item Marcher le long de la frontière de décision jusqu'à ce qu'elle se plie : on vient de croiser l'hyperplan critique d'un neurone.
+  \item Se projeter de l'autre côté du pli pour obtenir un second point de transition.
+  \item Estimer les normales des deux facettes de part et d'autre du pli.
+  \item L'intersection des deux facettes est contenue dans l'hyperplan critique du neurone : répéter ailleurs pour obtenir assez de points et déterminer l'hyperplan complet.
+  \item Signe : le côté actif transmet sa variation plus vite aux neurones suivants.
+\end{enumerate}
+
+Limite de cette méthode : elle ne récupère pas la couche de sortie, précisément parce qu'il n'y a pas de pli à suivre à l'étape 2 sur une couche sans activation. C'est le trou que la section 4 comble.
+
+\section{Le zoo des activations}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+Activation & Formule & Dérivée & Famille \\
+\midrule
+ReLU & $\max(0,z)$ & $1$ ou $0$ & Par morceaux \\
+Leaky ReLU / PReLU & $z$ ou $\alpha z$ & $1$ ou $\alpha$ & Par morceaux \\
+ELU & $z$ ou $e^z-1$ & $1$ ou $e^z$ & Hybride (courbe côté négatif) \\
+Sigmoïde / tanh & bornées & jamais nulle, s'affaiblit vite & Saturante \\
+GELU / SiLU & $z\Phi(z)$ / $z\,\sigma(z)$ & lisse, jamais nulle & Lisse moderne \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Extraction hard-label au-delà de ReLU}
+
+La construction du point dual (section 5) repose sur un \emph{pli net} de la frontière de décision, pas sur une propriété exclusive à ReLU. Un prototype (TP8, octobre 2026) teste cette généralisation en balayant des droites voisines autour d'un point de frontière pour détecter où elle se plie, sans jamais supposer que l'activation soit ReLU.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Activation & Neurones retrouvés / 4 & Cosinus moyen & Fonctionne ? \\
+\midrule
+ReLU & 2 à 3 & $\approx0{,}82$ & oui, variable \\
+Leaky ReLU & 0 à 4 & $\approx0{,}88$ quand trouvé & oui, très variable \\
+PReLU & 0 à 4 & $\approx0{,}79$ quand trouvé & oui, très variable \\
+ELU & 0 & -- & non \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{remarque}
+Pourquoi ELU échoue systématiquement : un diagnostic direct (octobre 2026) montre que la frontière de décision est trouvée normalement (40 à 65~\% des tentatives), mais qu'un pli net n'y est détecté que 0 ou 1 fois sur 40. La partie négative d'ELU est courbe, pas plate : le pli y est étalé au lieu d'être concentré en un point, ce qui casse l'hypothèse de base de la méthode. Autre résultat du même diagnostic, moins intuitif : la forte variance pour Leaky ReLU et PReLU ne vient pas de la géométrie du réseau cible (un test a même trouvé une corrélation \emph{négative} entre séparation des neurones et taux de réussite) mais du hasard propre à la recherche de l'attaque elle-même.
+\end{remarque}
+
+\begin{exo}{3}
+En une phrase, explique pourquoi un pli de la frontière de décision révèle un neurone caché, alors qu'un simple point de transition ne le fait pas.
+\end{exo}
+\begin{sol}
+Un point de transition quelconque se trouve sur une seule facette de la frontière, qui dépend de l'état de \emph{tous} les neurones actifs dans cette région ; un pli marque exactement l'endroit où l'on passe d'une facette à une autre, donc où \emph{un seul} neurone change d'état, ce qui isole son hyperplan.
+\end{sol}
+
+\section{Pour aller plus loin}
+
+Le cahier de thèse contient le détail complet de chaque attaque citée (seize fiches de lecture), le code des TP correspondants, et une note sur les travaux de 2026 qui recoupent directement ce terrain.
+
+\end{document}

@@ -1,0 +1,250 @@
+\documentclass[11pt]{article}
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{french}
+\setmainfont{Latin Modern Roman}
+
+\usepackage[margin=2.8cm]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\small, columns=flexible, breaklines=true}
+
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.6em}{}
+
+\newtcolorbox{exo}[1]{breakable, colback=white, colframe=black!60, boxrule=0.5pt,
+  arc=1pt, title=Exercice~#1, fonttitle=\bfseries, coltitle=black}
+\newtcolorbox{sol}{breakable, colback=black!3, colframe=black!30, boxrule=0.3pt,
+  arc=1pt, title=Solution, fonttitle=\bfseries\itshape, coltitle=black!50!black}
+\newtcolorbox{remarque}{breakable, colback=black!2, colframe=black!40, boxrule=0.4pt,
+  arc=1pt, title=À retenir, fonttitle=\bfseries, coltitle=black}
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\title{Cours 2 : réseaux de neurones et réseaux profonds\\[0.3em]\large Du perceptron à la rétropropagation, un seul exemple du début à la fin}
+\author{Tidiane Diallo}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{Le perceptron, et sa limite}
+
+En 1958, Rosenblatt propose le perceptron : une fonction qui prend un vecteur d'entrée, calcule une somme pondérée, et décide 0 ou 1 selon un seuil.
+
+\[ \text{sortie} = \begin{cases} 1 & \text{si } w \cdot x + b > 0 \\ 0 & \text{sinon} \end{cases} \]
+
+$w$ (les poids) et $b$ (le biais) sont les deux seuls réglages du modèle. Géométriquement, $w\cdot x + b = 0$ est une droite (ou un hyperplan, en dimension supérieure) qui sépare l'espace en deux. Un perceptron ne peut apprendre que des problèmes \textbf{linéairement séparables}.
+
+\begin{exo}{1}
+Vérifie que $w=(1,1)$, $b=-1{,}5$ calcule correctement la fonction logique ET sur les quatre couples $(0,0)$, $(0,1)$, $(1,0)$, $(1,1)$.
+\end{exo}
+\begin{sol}
+$(0,0)$ : $1(0)+1(0)-1{,}5=-1{,}5<0 \Rightarrow 0$. $(1,0)$ : $1-1{,}5=-0{,}5<0 \Rightarrow 0$. $(0,1)$ : idem par symétrie $\Rightarrow 0$. $(1,1)$ : $1+1-1{,}5=0{,}5>0 \Rightarrow 1$. Les quatre sorties sont correctes.
+\end{sol}
+
+\begin{remarque}
+Le problème OU-EXCLUSIF (XOR, 1 seulement si les deux entrées diffèrent) n'est pas linéairement séparable : les points $(0,0)$ et $(1,1)$ valent 0, les points $(0,1)$ et $(1,0)$ valent 1, et aucune droite ne sépare ces deux groupes (Minsky \& Papert, 1969). La solution consiste à empiler plusieurs perceptrons en couches, ce qui exige de remplacer le seuil brutal par une fonction qu'on peut dériver.
+\end{remarque}
+
+\section{Du neurone au réseau profond}
+
+Le seuil brutal a une pente nulle presque partout, donc il ne donne aucune indication de direction pour ajuster les poids. Le neurone moderne remplace le seuil par une fonction d'activation $\sigma$, continue :
+
+\[ z = w\cdot x + b \qquad a = \sigma(z) \]
+
+$z$ est la pré-activation, $a$ la sortie du neurone. Une couche applique plusieurs neurones en parallèle, en rangeant les poids dans une matrice $W$ :
+
+\[ z = Wx + b \qquad a = \sigma(z) \]
+
+Un réseau profond enchaîne les couches :
+
+\[ a^0 = x \to a^1 = \sigma(W^1a^0+b^1) \to a^2 = \sigma(W^2a^1+b^2) \to \cdots \to \text{sortie} = W^La^{L-1}+b^L \]
+
+Les \textbf{paramètres} du réseau sont tous les $(W^i,b^i)$. La couche de sortie n'a en général pas d'activation : c'est une transformation affine, sur laquelle on applique ensuite un softmax si l'on veut une classification (cours 3).
+
+\subsection*{Le fil conducteur de ce cours}
+
+Un réseau minuscule : 2 entrées $\to$ 2 neurones cachés (ReLU) $\to$ 1 sortie. Cible : $y=1$, entrée $x=(1,2)$.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+ & Poids & Biais \\
+\midrule
+Neurone caché 1 & $w=(1,-1)$ & $b=0$ \\
+Neurone caché 2 & $w=(0{,}5\,;0{,}5)$ & $b=-1$ \\
+Neurone de sortie & $w=(2,1)$ & $b=0{,}3$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Passage avant.}
+\begin{align*}
+z_1 &= 1(1)+(-1)(2)+0 = -1 \quad\to\quad a_1 = \mathrm{ReLU}(-1) = 0 \\
+z_2 &= 0{,}5(1)+0{,}5(2)-1 = 0{,}5 \quad\to\quad a_2 = \mathrm{ReLU}(0{,}5) = 0{,}5 \\
+\hat y &= 2(0)+1(0{,}5)+0{,}3 = 0{,}8
+\end{align*}
+
+Le réseau prédit $0{,}8$, la cible est $1$.
+
+\section{Les activations et leur impact (bref aperçu)}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+Activation & Formule & Dérivée & Effet principal \\
+\midrule
+Sigmoïde & $1/(1+e^{-x})$ & $\sigma(1-\sigma)$, max $0{,}25$ & Gradient qui s'évanouit en profondeur \\
+ReLU & $\max(0,x)$ & $1$ ou $0$ & Rapide, mais neurones « morts » possibles \\
+Leaky ReLU & $x$ ou $0{,}1x$ & $1$ ou $0{,}1$ & Corrige les neurones morts \\
+GELU / SiLU & lisses & jamais nulle & Compromis moderne, transformers \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le cours 3 de cette série reprend cette table en détail. Ici, l'essentiel est de retenir qu'une activation qui tombe exactement à 0, comme ReLU côté négatif, bloque aussi la correction côté apprentissage : c'est la section 5 qui le montre avec des chiffres.
+
+\section{Mesurer l'erreur : la perte}
+
+\[ L(\hat y, y) = \tfrac{1}{2}(\hat y - y)^2 \quad \text{(erreur quadratique, régression)} \]
+
+Avec $\hat y = 0{,}8$ et $y=1$ : $L = \tfrac12(0{,}8-1)^2 = \tfrac12 \times 0{,}04 = 0{,}02$.
+
+\section{Le gradient et la descente de gradient}
+
+Le gradient d'une fonction indique la direction où elle augmente le plus vite. Pour faire baisser la perte, on avance dans la direction opposée :
+
+\[ w \leftarrow w - \eta \cdot \frac{\partial L}{\partial w} \]
+
+$\eta$ est le taux d'apprentissage. Pour un réseau à plusieurs couches, la règle de dérivation en chaîne donne le gradient d'un poids lointain par rapport à la perte :
+
+\[ \frac{\partial L}{\partial w} = \frac{\partial L}{\partial a}\cdot\frac{\partial a}{\partial z}\cdot\frac{\partial z}{\partial w} \]
+
+Appliquée couche par couche, de la sortie vers l'entrée, cette règle s'appelle la rétropropagation.
+
+\section{La rétropropagation, calculée à la main}
+
+On reprend le réseau de la section 2. La perte vaut $0{,}02$.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{1cm}p{6cm}p{6.5cm}}
+\toprule
+Étape & Calcul & Lecture \\
+\midrule
+1 & $\partial L/\partial \hat y = \hat y - y = 0{,}8-1=-0{,}2$ & Si $\hat y$ augmentait, la perte diminuerait. \\
+2 & $\partial L/\partial w_s = -0{,}2\times(0\,;0{,}5)=(0\,;-0{,}1)$, $\partial L/\partial b_s=-0{,}2$ & Le premier poids multiplie un neurone à 0 : aucun effet pour l'instant. \\
+3 & $\partial L/\partial a = -0{,}2\times(2,1)=(-0{,}4\,;-0{,}2)$ & Les deux neurones cachés « voudraient » changer. \\
+4 & ReLU$'(z_1)=0$ (inactif), ReLU$'(z_2)=1$ (actif) & Porte fermée pour le neurone 1, ouverte pour le neurone 2. \\
+5 & $\partial L/\partial z_1 = 0$, $\partial L/\partial z_2 = -0{,}2$ & Rien ne passe pour le neurone 1. \\
+6 & $\partial L/\partial w_1 = (0,0)$, $\partial L/\partial w_2 = -0{,}2\times(1,2)=(-0{,}2\,;-0{,}4)$ & Le neurone 1 ne reçoit aucune correction. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{remarque}
+Le neurone caché 1 avait une pré-activation négative, donc une sortie nulle. Son gradient est exactement nul à chaque étape qui le concerne : c'est le neurone « mort », un phénomène réel, pas une anecdote.
+\end{remarque}
+
+Mise à jour avec $\eta=0{,}1$ :
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+Paramètre & Avant & Gradient & Après \\
+\midrule
+$w_s$ (2e valeur) & $1$ & $-0{,}1$ & $1-0{,}1(-0{,}1)=1{,}01$ \\
+$b_s$ & $0{,}3$ & $-0{,}2$ & $0{,}3-0{,}1(-0{,}2)=0{,}32$ \\
+$w_2$ & $(0{,}5\,;0{,}5)$ & $(-0{,}2\,;-0{,}4)$ & $(0{,}52\,;0{,}54)$ \\
+$b_2$ & $-1$ & $-0{,}2$ & $-0{,}98$ \\
+$w_1,b_1$ & -- & $(0,0),0$ & inchangés \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Le même cycle, en code}
+
+\begin{lstlisting}
+import torch, torch.nn as nn
+
+model = nn.Sequential(
+    nn.Linear(2, 2), nn.ReLU(),
+    nn.Linear(2, 1)
+)
+loss_fn = nn.MSELoss()
+opt = torch.optim.SGD(model.parameters(), lr=0.1)
+
+def step(x, y):
+    opt.zero_grad()
+    y_hat = model(x)           # passage avant (section 2)
+    loss = loss_fn(y_hat, y)   # perte (section 4)
+    loss.backward()            # passe arriere (section 6)
+    opt.step()                 # mise a jour (section 5-6)
+    return loss.item()
+\end{lstlisting}
+
+\section{Exercice de synthèse}
+
+\begin{exo}{2}
+Même type de réseau, 2 entrées $\to$ 2 neurones cachés (ReLU) $\to$ 1 sortie, mais avec ces réglages :
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+ & Poids & Biais \\
+\midrule
+Neurone caché 1 & $w=(1,2)$ & $b=-1$ \\
+Neurone caché 2 & $w=(1,1)$ & $b=1$ \\
+Neurone de sortie & $w=(3,-1)$ & $b=-0{,}5$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Entrée $x=(2,-1)$, cible $y=1$, taux d'apprentissage $\eta=0{,}1$. Calcule, dans l'ordre : le passage avant, la perte, chaque étape de la passe arrière, puis la mise à jour de tous les paramètres. Un des deux neurones cachés va-t-il recevoir une correction ?
+\end{exo}
+
+\begin{sol}
+\textbf{Passage avant.}
+\[ z_1 = 1(2)+2(-1)-1=-1 \to a_1=\mathrm{ReLU}(-1)=0 \qquad z_2=1(2)+1(-1)+1=2 \to a_2=\mathrm{ReLU}(2)=2 \]
+\[ \hat y = 3(0)+(-1)(2)-0{,}5 = -2{,}5 \]
+\textbf{Perte.} $L=\tfrac12(-2{,}5-1)^2=\tfrac12(12{,}25)=6{,}125$.
+
+\textbf{Passe arrière.}
+\[ \partial L/\partial\hat y = -2{,}5-1=-3{,}5 \]
+\[ \partial L/\partial w_s = -3{,}5\times(0,2)=(0,-7) \qquad \partial L/\partial b_s=-3{,}5 \]
+\[ \partial L/\partial a = -3{,}5\times(3,-1)=(-10{,}5\,;3{,}5) \]
+ReLU$'(z_1)=0$ (inactif, $z_1=-1$), ReLU$'(z_2)=1$ (actif, $z_2=2$).
+\[ \partial L/\partial z_1 = 0 \qquad \partial L/\partial z_2 = 3{,}5 \]
+\[ \partial L/\partial w_1 = (0,0) \qquad \partial L/\partial w_2 = 3{,}5\times(2,-1)=(7,-3{,}5) \qquad \partial L/\partial b_2 = 3{,}5 \]
+
+\textbf{Mise à jour ($\eta=0{,}1$).}
+\[ w_s: (3,-1)-0{,}1(0,-7)=(3,-0{,}3) \qquad b_s: -0{,}5-0{,}1(-3{,}5)=-0{,}15 \]
+\[ w_2: (1,1)-0{,}1(7,-3{,}5)=(0{,}3\,;1{,}35) \qquad b_2: 1-0{,}1(3{,}5)=0{,}65 \]
+\[ w_1, b_1 \text{ inchangés.} \]
+
+Le neurone caché 1 ne reçoit toujours aucune correction, pour la même raison qu'à la section 6 : sa pré-activation est négative, sa sortie et sa pente sont nulles.
+\end{sol}
+
+\section{Pour aller plus loin}
+
+Le cours 3 de cette série reprend les activations en profondeur, introduit le softmax, et montre comment la même mécanique de rétropropagation se retourne pour devenir une attaque d'extraction, en raw-output puis en hard-label, sur ReLU puis au-delà.
+
+\end{document}
