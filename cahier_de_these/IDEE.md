@@ -158,3 +158,31 @@ Ces trois forment naturellement les **trois chapitres de contribution** de la th
   troisième dimension, la variance inter-graines, qui est au moins aussi
   grande que l'effet du rayon. Ne pas présenter de chiffre "|cos| ≈ 0.98"
   sans préciser sur combien de graines il tient.
+
+- **2026-10-25 (suite) — la variance vient de l'attaque, pas du réseau
+  cible.** Deux tests rapides pour trouver la cause de la variance ci-dessus.
+  **tp8c (`tp8c_diagnostic_variance_graines.py`)** teste l'hypothèse
+  géométrique : les graines où l'attaque échoue sont-elles celles où deux
+  hyperplans cachés sont presque parallèles (donc faciles à confondre) ?
+  **Hypothèse infirmée, et à l'envers** : corrélation entre angle minimal
+  entre hyperplans et nombre de neurones retrouvés = −0.58 (Leaky ReLU) et
+  −0.72 (PReLU). La graine la plus "facile" en apparence (hyperplans les
+  plus séparés, 53.5°) échoue totalement (0/4) ; la plus "difficile"
+  (15.7°) réussit à 4/4. La géométrie de la cible n'explique donc pas la
+  variance, ou alors en sens inverse de l'intuition.
+  **tp8d (`tp8d_variance_attaque_vs_reseau.py`)** teste l'autre source :
+  sur UN SEUL réseau cible fixe (Leaky ReLU, seed=7), faire varier
+  uniquement la graine d'attaque donne 1/4 à 4/4 neurones retrouvés, la
+  même amplitude que faire varier le réseau. **La variance vient donc du
+  hasard de la recherche de l'attaque elle-même** (quelles droites et
+  quels germes sont tirés), pas de la géométrie du réseau cible.
+  Détail notable : la graine d'attaque 3 (utilisée dans le document du 18
+  octobre) est celle qui trouve le moins de neurones (1/4) mais avec la
+  meilleure précision sur celui-là (0.98) ; les autres graines trouvent
+  4/4 mais avec une précision moyenne plus faible (0.76 à 0.89). C'est un
+  compromis quantité/précision lié au tirage aléatoire, pas juste du bruit.
+  **Conséquence :** la prochaine amélioration la plus rentable n'est pas de
+  caractériser des réseaux "difficiles", c'est de stabiliser la recherche
+  elle-même (par exemple plusieurs graines d'attaque agrégées par vote, ou
+  revoir pourquoi certains tirages de germes/droites sont tellement plus
+  informatifs que d'autres).

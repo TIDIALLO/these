@@ -1,0 +1,28 @@
+==============================================================================
+Reseau cible FIXE (leaky_relu, seed reseau=7) -- on ne fait varier que la graine d'attaque
+==============================================================================
+ graine attaque  retrouves/4   cos moyen
+----------------------------------------
+              1         4/4      0.7554
+              2         4/4      0.8012
+              3         1/4      0.9792
+              4         4/4      0.8878
+              5         4/4      0.7761
+
+Variation sur ce seul reseau : 1/4 a 4/4 selon la seule graine d'attaque.
+
+==============================================================================
+Reseau cible FIXE (prelu, seed reseau=7) -- on ne fait varier que la graine d'attaque
+==============================================================================
+ graine attaque  retrouves/4   cos moyen
+----------------------------------------
+              1         3/4      0.7494
+              2         3/4      0.6615
+              3         3/4      0.6858
+              4         4/4      0.5349
+              5         1/4      0.9448
+
+Variation sur ce seul reseau : 1/4 a 4/4 selon la seule graine d'attaque.
+
+
+[exited with code 0]
