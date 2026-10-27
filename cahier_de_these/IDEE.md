@@ -186,3 +186,41 @@ Ces trois forment naturellement les **trois chapitres de contribution** de la th
   elle-même (par exemple plusieurs graines d'attaque agrégées par vote, ou
   revoir pourquoi certains tirages de germes/droites sont tellement plus
   informatifs que d'autres).
+
+- **2026-10-26/27 — idée B6 testée : la défense tient-elle en hard-label sur
+  Leaky ReLU/PReLU ?** Deux scripts, deux lectures différentes de la même
+  question.
+  **tp7b (`tp7b_defense_hardlabel_nonrelu.py`)** applique `make_defended`
+  (similarité intra-couche, TP7) avec `similarity=0.97` à Leaky ReLU et
+  PReLU, puis lance TP8 (hard-label) sur 5 graines d'attaque. Résultat
+  brut : l'attaque passe de ~3/4 neurones trouvés (réseau normal) à **0/4,
+  sur les 5 graines, pour les deux activations**. Mais attention : à ce
+  réglage, les 4 neurones cachés deviennent parfaitement colinéaires
+  (`|cos| max = 1.000`) — un cas dégénéré, bien plus fort que ce que vise
+  la vraie défense (qui garde moins de 1 % de perte de précision, donc une
+  similarité partielle, pas totale). Ce résultat seul aurait été trompeur
+  à citer tel quel.
+  **tp7c (`tp7c_defense_moderee.py`)** reprend le test en balayant
+  `similarity` de 0 à 0,9 (3 graines d'attaque, pour tenir dans un temps
+  raisonnable). Deux lectures différentes par activation :
+  - **PReLU** : effet net et graduel. Neurones trouvés en moyenne :
+    3,00 (sim=0) → 1,33 (0,3) → 1,00 (0,6) → 0,00 (0,9), pendant que la
+    similarité réelle entre neurones monte de 0,924 à 0,999. La défense
+    semble transférer, et de façon progressive, pas seulement au point
+    de collapse total.
+  - **Leaky ReLU** : effet beaucoup moins net sur les mêmes paliers
+    (3,00 → 2,67 → 3,33 → 0,00) : pas de tendance claire avant le dernier
+    palier, où tout s'effondre d'un coup. Avec seulement 3 graines
+    d'attaque et la variance déjà mesurée le 25/10, impossible de dire si
+    Leaky ReLU résiste vraiment mieux à similarité modérée, ou si c'est
+    encore du bruit de recherche qui masque un effet réel.
+  **Point pratique à noter :** ce balayage (2 activations × 4 similarités
+  × 3 graines) a pris 3971 s, environ 66 minutes — nettement plus que les
+  tests précédents, parce que le nombre de tentatives augmente quand les
+  hyperplans se ressemblent (plus de collisions détectées par le test de
+  déduplication). À budgétiser avant de lancer un balayage plus fin.
+  **Prochaine étape pour B6 :** refaire le balayage Leaky ReLU avec plus de
+  graines d'attaque (5 à 10) avant de conclure quoi que ce soit sur la
+  différence avec PReLU ; et vérifier sur un réseau à plus de neurones
+  cachés (TP7 utilise dim=4, hidden=5) que le même palier de similarité ne
+  produit pas la colinéarité totale observée dans tp7b avec dim=3.
