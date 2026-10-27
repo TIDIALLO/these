@@ -62,11 +62,6 @@ pip install -r requirements.txt
 
 3. Carlini et al. (2025). *Polynomial Time Cryptanalytic Extraction in Hard-Label Setting*. EUROCRYPT 2025.
 
-## Contact
-
-- Email: tidiane.diallo@ept.sn
-- Directeur: aaciss@ept.edu.sn
-
 ## License
 
 Ce code est fourni à des fins de recherche académique uniquement.
