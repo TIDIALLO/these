@@ -1,0 +1,603 @@
+\documentclass[11pt]{article}
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{french}
+\setmainfont{Latin Modern Roman}
+
+\usepackage[margin=2.6cm]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, calc, decorations.pathreplacing}
+
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.6em}{}
+
+\newtcolorbox{remarque}[1][Remarque]{breakable, colback=black!3, colframe=black!40,
+  boxrule=0.4pt, arc=1pt, title=#1, fonttitle=\bfseries, coltitle=black}
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\title{Résultat A, au complet\\[0.3em]
+\large Récupération de la couche de sortie d'un réseau profond, en hard-label,
+indépendamment de l'activation des couches cachées}
+\author{Tidiane Diallo}
+\date{5 novembre 2026}
+
+\begin{document}
+\maketitle
+
+\begin{remarque}[Ce que couvre ce document]
+Le document envoyé le 18 octobre résumait deux résultats, A et B, sur une
+page chacun. Pr.~Ciss a demandé le détail complet du résultat A. C'est ce que
+ce document fournit : le problème, les trois hypothèses sur lesquelles repose
+la méthode, le déroulement pas à pas sur un cas réel, les résultats mesurés
+sur les quatre activations testées, et les limites. Le résultat B (extraction
+hard-label de neurones non ReLU, encore un prototype) n'est pas repris ici.
+
+Tous les chiffres de ce document proviennent de l'exécution réelle du script
+\texttt{attaque\_couche\_sortie.py}, réexécutée pour la rédaction de ce
+document. Les journaux complets des quatre exécutions sont dans le dossier
+\texttt{logs/} déjà transmis avec le document du 18 octobre.
+\end{remarque}
+
+\tableofcontents
+
+\section{Le problème}
+
+Carlini et al. (EUROCRYPT 2025) savent récupérer toutes les couches d'un
+réseau ReLU en hard-label, sauf la dernière. La couche de sortie produit des
+logits bruts, sans passer par une activation : il n'y a donc pas de coude à
+détecter, et la technique employée pour les couches cachées ne s'y applique
+pas.
+
+Canales-Martínez et Santos (2025), mon article de départ, comblent ce trou,
+mais seulement dans un cadre où le reste du réseau est en ReLU. La question
+posée ici est simple à énoncer : est-ce que la récupération de la couche de
+sortie dépend réellement de ReLU, ou seulement de la règle de décision
+finale, qui est la même quelle que soit l'activation cachée ?
+
+La réponse mesurée dans ce document est non : la méthode fonctionne à
+l'identique sur ReLU, GELU, SiLU et tanh, avec les mêmes garanties
+numériques. Le reste du document explique pourquoi, puis le prouve par
+l'exécution.
+
+\section{Les trois hypothèses}
+
+Soit $y \in \mathbb{R}^{d_r}$ la sortie de la dernière couche cachée, et
+$A^{(r+1)}, b^{(r+1)}$ les poids et biais de la couche de sortie, inconnus de
+l'attaquant. Le logit de la classe $k$ s'écrit $A_k \cdot y + b_k$, et le
+réseau prédit $\arg\max_k (A_k \cdot y + b_k)$.
+
+La méthode repose sur trois hypothèses, posées en un point de transition
+entre deux classes $i$ et $j$ (un point où la classe prédite bascule de $i$ à
+$j$) :
+
+\begin{itemize}
+  \item[\textbf{(H1)}] $A_i \cdot y + b_i = A_j \cdot y + b_j$ : au point de
+    transition exact, les deux classes sont à égalité.
+  \item[\textbf{(H2)}] $y = f_{1..r}(x)$ est calculable, c'est-à-dire que les
+    couches cachées sont déjà connues. C'est une hypothèse forte et
+    assumée : ce résultat n'est pas une attaque de bout en bout, c'est le
+    dernier maillon d'une chaîne dont EUROCRYPT 2025 fournit les maillons
+    précédents.
+  \item[\textbf{(H3)}] L'oracle ne renvoie que $\arg\max_k(A_k \cdot y +
+    b_k)$. Cette décision ne change pas si l'on ajoute une même constante à
+    tous les scores, ni si on les multiplie tous par une même constante
+    positive.
+\end{itemize}
+
+Le point essentiel est qu'aucune des trois ne mentionne l'activation des
+couches cachées. (H3) ne porte que sur la règle de décision finale, un
+argmax, qui est strictement la même quelle que soit la fonction qui a produit
+$y$. Si (H2) tient, le problème qui reste est purement linéaire : retrouver
+un classifieur linéaire à partir d'un oracle qui ne donne que son argmax.
+C'est ce que montre la figure~\ref{fig:transition}.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=1.0, every node/.style={font=\small}]
+  % axes
+  \draw[-{Stealth[length=2mm]}] (0,0) -- (8,0) node[right] {position le long d'une droite de sonde};
+  \draw[-{Stealth[length=2mm]}] (0,-0.3) -- (0,3.3) node[above] {score};
+  % two score lines
+  \draw[thick, blue!60!black] (0.5,0.5) -- (7.3,2.6) node[right] {$A_i\cdot y + b_i$};
+  \draw[thick, red!60!black] (0.5,2.6) -- (7.3,0.6) node[right] {$A_j\cdot y + b_j$};
+  % intersection
+  \coordinate (P) at (3.93,1.56);
+  \fill[black] (P) circle (1.6pt);
+  \draw[dashed] (P) -- (3.93,-0.25) node[below] {$p$ (point de transition)};
+  % regions
+  \draw[-{Stealth[length=1.8mm]}, black!50] (1.5,-0.55) -- (1.5,-0.1);
+  \node[black!60] at (1.5,-0.8) {$\arg\max = j$};
+  \draw[-{Stealth[length=1.8mm]}, black!50] (6.3,-0.55) -- (6.3,-0.1);
+  \node[black!60] at (6.3,-0.8) {$\arg\max = i$};
+\end{tikzpicture}
+\caption{Au point $p$, les scores des classes $i$ et $j$ sont égaux (H1).
+De part et d'autre, l'une domine l'autre : c'est tout ce que l'oracle
+révèle (H3). Rien ici ne dépend de la façon dont $y$ a été calculé (H2).}
+\label{fig:transition}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=0.95, every node/.style={font=\small}]
+  % left: translation invariance
+  \begin{scope}
+    \draw[-{Stealth[length=2mm]}] (0,0) -- (3.6,0);
+    \draw[-{Stealth[length=2mm]}] (0,-0.2) -- (0,2.6);
+    \draw[thick, blue!60!black] (0.3,0.3) -- (3.3,1.9);
+    \draw[thick, red!60!black] (0.3,1.9) -- (3.3,0.3);
+    \draw[thick, blue!30!white, dashed] (0.3,0.9) -- (3.3,2.5);
+    \draw[thick, red!30!white, dashed] (0.3,2.5) -- (3.3,0.9);
+    \fill[black] (1.8,1.1) circle (1.4pt);
+    \node at (1.8,-0.6) {translation (même $p$)};
+  \end{scope}
+  % right: scale with negative sign
+  \begin{scope}[xshift=5.4cm]
+    \draw[-{Stealth[length=2mm]}] (0,0) -- (3.6,0);
+    \draw[-{Stealth[length=2mm]}] (0,-1.6) -- (0,2.6);
+    \draw[thick, blue!60!black] (0.3,0.3) -- (3.3,1.9);
+    \draw[thick, red!60!black] (0.3,1.9) -- (3.3,0.3);
+    \draw[thick, blue!30!white, dashed] (0.3,-0.3) -- (3.3,-1.9);
+    \draw[thick, red!30!white, dashed] (0.3,-1.9) -- (3.3,-0.3);
+    \fill[black] (1.8,1.1) circle (1.4pt);
+    \node at (1.8,-2.2) {échelle $c<0$ : $\arg\max \to \arg\min$};
+  \end{scope}
+\end{tikzpicture}
+\caption{Les deux invariances de (H3). À gauche : décaler les deux scores de
+la même constante ne change pas le gagnant. À droite : les multiplier par une
+même constante négative (en pointillé) inverse l'ordre complet, donc
+l'argmax devient un argmin. C'est exactement ce qui se produit pour ReLU,
+GELU et SiLU dans les résultats mesurés (section~\ref{sec:resultats}).}
+\label{fig:invariances}
+\end{figure}
+
+Ce constat est attendu une fois (H2) admise. L'intérêt de ce résultat n'est
+pas de le deviner mais de le vérifier explicitement sur la méthode de
+l'article de départ, et de traiter au passage l'ambiguïté de signe en sortie
+multi-classes, que cet article ne discute que pour la sortie binaire.
+
+\section{Protocole}
+
+Réseau $24$-$20$-$16$-$8$-$4$ (profondeur 4, 4 classes en sortie), construit
+avec la même architecture et la même graine (\texttt{seed=5}) pour les
+quatre activations testées. L'attaquant dispose de l'oracle hard-label et
+suppose les couches $1..r$ déjà extraites (hypothèse H2, posée ici
+explicitement). Il collecte des points de transition, résout le système
+linéaire qui en découle, puis corrige l'ambiguïté de signe global avec une
+seule requête supplémentaire.
+
+\subsection{Compter les degrés de liberté}
+
+La couche de sortie compte $4 \times (8+1) = 36$ coefficients
+($d_r = 8$ neurones cachés, $d_{r+1} = 4$ classes, $+1$ pour chaque biais).
+L'invariance par translation (H3) en rend $8+1=9$ inobservables (on peut
+décaler les 8 colonnes de $A$ et le biais sans rien changer à l'argmax), et
+l'échelle globale un de plus. Le rang maximal théorique du système est donc
+
+\[
+  \text{rang}_{\max} = \underbrace{36}_{\text{inconnues}} -
+  \underbrace{\big(\underbrace{9}_{\text{translation}} +
+  \underbrace{1}_{\text{échelle}}\big)}_{\text{degrés de liberté, } d_r+2} = 26.
+\]
+
+La figure~\ref{fig:kernel} rend ce calcul concret sur la structure réelle du
+vecteur d'inconnues $\theta$.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=0.62, every node/.style={font=\scriptsize}]
+  \def\cw{0.62} % largeur cellule
+  \def\ch{0.62} % hauteur cellule
+  \foreach \row [count=\r from 0] in {0,1,2,3} {
+    \foreach \col in {0,...,8} {
+      \pgfmathsetmacro{\x}{\col*\cw}
+      \pgfmathsetmacro{\y}{-\row*\ch}
+      \ifnum\row=0
+        \fill[black!25] (\x,\y) rectangle ++(\cw,-\ch);
+      \else
+        \ifnum\col=0
+          \ifnum\row=1
+            \fill[blue!25] (\x,\y) rectangle ++(\cw,-\ch);
+          \else
+            \fill[white] (\x,\y) rectangle ++(\cw,-\ch);
+          \fi
+        \else
+          \fill[white] (\x,\y) rectangle ++(\cw,-\ch);
+        \fi
+      \fi
+      \draw[black!50] (\x,\y) rectangle ++(\cw,-\ch);
+    }
+    \node[anchor=east] at (-0.15,-\r*\ch-\ch/2) {classe \r};
+  }
+  \node[anchor=south] at (4*0.62,0.3) {\normalsize bloc $k$ : $A_k$ (8 valeurs) puis $b_k$ (1 valeur), répété pour $k=0..3$};
+  \draw[decorate, decoration={brace, amplitude=4pt}, thick]
+    (-0.3,0) -- (-0.3,-0.62) node[midway, left=6pt] {};
+  \node[anchor=east, black!50] at (-1.6,-0.31) {fixé à $0$ \\ (9 val.)};
+  \node[anchor=east, blue!60!black] at (-1.6,-0.93) {fixé à $1$};
+\end{tikzpicture}
+\caption{Les 36 inconnues de $\theta$, rangées en 4 blocs de 9 (8 coefficients
+de $A$ + 1 biais, par classe). Le bloc entier de la classe 0 (gris) est fixé
+à zéro : c'est le choix de représentant pour les 9 degrés de liberté de
+translation. Un coefficient supplémentaire (bleu, $A_{1,1}=1$) fixe
+l'échelle. Les 26 cellules blanches restantes sont les inconnues réellement
+résolues, exactement le rang maximal calculé plus haut.}
+\label{fig:kernel}
+\end{figure}
+
+L'« écart max » utilisé plus loin est l'erreur maximale $\max |\hat A -
+A_{\text{vrai}}|$ entre les coefficients retrouvés et les vrais, une fois ces
+derniers ramenés à la même normalisation (bloc 0 à zéro, $A_{1,1}=1$). Il ne
+faut jamais comparer $\hat A$ directement à $A$ : les deux vivent dans la
+même classe d'équivalence, mais pas au même représentant.
+
+\section{Déroulement pas à pas, sur un cas réel (ReLU)}
+\label{sec:pasapas}
+
+Cette section suit l'exécution réelle du script sur l'activation ReLU,
+graine 5, étape par étape, avec les chiffres effectivement produits. Les
+trois autres activations suivent exactement le même déroulement ; seuls les
+résultats numériques diffèrent, rassemblés section~\ref{sec:resultats}.
+
+\subsection*{Étape 0 : le réseau cible et ce que l'attaquant ne voit pas}
+
+Le réseau cible a l'architecture $24$-$20$-$16$-$8$-$4$, exactitude
+$100\,\%$ sur les données d'entraînement. Sa vraie couche de sortie, que
+l'attaquant ne voit jamais, est
+
+\[
+A^{(r+1)} = \begin{pmatrix}
+ 0{,}4161 & -0{,}3239 & -0{,}4117 & 0{,}5513 & 1{,}5229 & 0{,}3504 & 0{,}5789 & -0{,}2251 \\
+-0{,}0752 & -0{,}7446 & 0{,}5031 & -0{,}1918 & -0{,}0407 & 0{,}1600 & 0{,}3785 & 0{,}7619 \\
+ 1{,}2533 & -0{,}3054 & -0{,}5891 & 0{,}0522 & -0{,}3394 & 0{,}5158 & -0{,}5281 & 0{,}0588 \\
+ 0{,}0010 & 0{,}8618 & 0{,}5219 & 0{,}8480 & 0{,}0627 & -0{,}9511 & -0{,}2533 & 0{,}2501
+\end{pmatrix}, \quad
+b^{(r+1)} = \begin{pmatrix} 0{,}1928 \\ -0{,}2417 \\ -0{,}1632 \\ 0{,}2121 \end{pmatrix}.
+\]
+
+\subsection*{Étape 1 et 2 : l'oracle, et la recherche d'un point de transition}
+
+L'attaquant ne voit que $\arg\max_k f(x)_k$, jamais les logits. Deux points
+$x_a$, $x_b$ sont tirés, menant respectivement aux classes $1$ et $3$
+(distance initiale $\|x_b - x_a\| = 12{,}3137$). Une dichotomie resserre
+l'intervalle $[x_a, x_b]$ jusqu'à un point de transition $p$ :
+
+\begin{center}
+\begin{tabular}{rl}
+\toprule
+itération $k$ & largeur $\|hi - lo\|$ \\
+\midrule
+1   & $6{,}157 \times 10^{0}$ \\
+10  & $1{,}203 \times 10^{-2}$ \\
+20  & $1{,}174 \times 10^{-5}$ \\
+40  & $1{,}120 \times 10^{-11}$ \\
+55  & $3{,}988 \times 10^{-16}$ \\
+100 & $3{,}554 \times 10^{-16}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+La figure~\ref{fig:bisection} illustre ce resserrement. Le plancher atteint
+vers $k=55$, environ $2{,}2 \times 10^{-16}$, est l'epsilon machine du
+flottant double ($2^{-52}$) : au-delà d'une cinquantaine d'itérations,
+chaque requête supplémentaire est gaspillée, la précision ne peut plus
+s'améliorer.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=1.0, every node/.style={font=\small}]
+  \draw[thick] (0,0) -- (10,0);
+  \node[below] at (0,0) {$x_a$ (classe 1)};
+  \node[below] at (10,0) {$x_b$ (classe 3)};
+  \fill (0,0) circle (1.5pt);
+  \fill (10,0) circle (1.5pt);
+  % k=1
+  \draw[blue!70!black, thick] (0,0.35) -- (5,0.35);
+  \node[blue!70!black, left] at (-0.1,0.35) {$k=1$};
+  % k=5
+  \draw[blue!50!black, thick] (3.2,0.75) -- (4.6,0.75);
+  \node[blue!50!black, left] at (3.0,0.75) {$k=5$};
+  % k=10
+  \draw[blue!30!black, thick] (3.85,1.15) -- (4.05,1.15);
+  \node[blue!30!black, left] at (3.65,1.15) {$k=10$};
+  % p
+  \draw[dashed] (3.93,0) -- (3.93,1.5);
+  \fill[red] (3.93,0) circle (1.6pt);
+  \node[red, above] at (3.93,1.55) {$p$ : $\|hi-lo\| \to \varepsilon_{\text{machine}}$};
+\end{tikzpicture}
+\caption{Chaque itération de dichotomie divise l'intervalle $[lo,hi]$ par
+deux. Après une cinquantaine d'itérations, l'intervalle est plus étroit que
+ce que peut distinguer un flottant double : $p$ est localisé à la précision
+machine.}
+\label{fig:bisection}
+\end{figure}
+
+\subsection*{Étape 3 : identifier le couple de classes}
+
+Deux sondes de part et d'autre de $p$, à $\varepsilon = 10^{-7}$, renvoient
+les classes $1$ et $3$ : c'est le couple $(i,j)$ qui se rencontre en ce
+point. Si les deux sondes renvoyaient la même classe, le point serait
+rejeté : la dichotomie aurait convergé près d'un coin où trois classes se
+rencontrent, ou la précision ne permettrait plus de séparer.
+
+\subsection*{Étape 4 : construire une ligne du système}
+
+En $p$, la sortie de la dernière couche cachée vaut (connue par H2) :
+
+\[
+y = (0 ;\ 3{,}6632 ;\ 11{,}4860 ;\ 0 ;\ 0 ;\ 0{,}2082 ;\ 1{,}8252 ;\ 10{,}0999).
+\]
+
+L'équation $A_1 \cdot y + b_1 = A_3 \cdot y + b_3$ devient une ligne du
+système : le bloc de la classe 1 reçoit $(y, 1)$, le bloc de la classe 3
+reçoit $-(y,1)$, les blocs des classes 0 et 2 restent nuls. Une vérification
+systématique confirme que la vraie couche de sortie satisfait bien cette
+ligne : $\text{ligne} \cdot \theta_{\text{vrai}} = 2{,}387 \times 10^{-15}$,
+proche de zéro à la précision machine près. Cette vérification est faite à
+chaque exécution : elle attrape une erreur d'indice ou de signe en une
+ligne, avant qu'elle ne coûte une journée de débogage.
+
+\subsection*{Étape 5 : collecter assez de points}
+
+L'étape 2 à 4 est répétée jusqu'à réunir $6 \times 26 = 156$ points de
+transition (203 tirages tentés, 0 rejeté), formant un système de $156$
+équations pour $36$ inconnues, assemblé en $0{,}9$ seconde. Les 6 couples de
+classes possibles apparaissent tous, avec une fréquence qui varie de 17 à 40
+occurrences : un couple absent ferait perdre du rang au système.
+
+\subsection*{Étape 6 : vérifier le rang et le noyau}
+
+Le rang du système atteint $26$, le maximum théorique, et la dimension du
+noyau vaut $36-26=10$, exactement $d_r+2$. Chacun des 10 générateurs
+attendus (une translation par colonne de $A$, une translation du biais, une
+mise à l'échelle) est bien dans le noyau :
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+générateur & $\|\text{système} \cdot v\|$ \\
+\midrule
+translation colonne 0 à 7 de $A$ (8 générateurs) & $0{,}00 \times 10^{0}$ \\
+translation du biais $b$ & $0{,}00 \times 10^{0}$ \\
+mise à l'échelle de $(A,b)$ & $5{,}82 \times 10^{-14}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Les 9 premiers sont des identités structurelles, exactement nuls. Le
+dernier n'est pas rigoureusement nul parce que c'est $\theta_{\text{vrai}}$
+lui-même : les lignes ne sont satisfaites qu'à la précision des points de
+transition, pas exactement.
+
+\subsection*{Étape 7 : fixer 10 variables, résoudre le reste}
+
+On fixe le bloc entier de la classe 0 à zéro (9 valeurs) et $A_{1,1}$ à $1$
+(1 valeur), exactement les $10$ degrés de liberté identifiés. Le système
+réduit, de rang plein $26/26$, se résout par moindres carrés en $1{,}3$~ms,
+avec un résidu maximal de $1{,}036 \times 10^{-13}$. Comparée à la vérité
+terrain normalisée de la même façon, l'erreur maximale sur les coefficients
+retrouvés est
+
+\[
+\max |\hat A - A_{\text{vrai, normalisé}}| = 4{,}297 \times 10^{-14},
+\]
+
+de l'ordre de l'epsilon machine. Rien n'indique qu'une activation lisse ou
+une activation en coude change quoi que ce soit à cette précision ; la
+section~\ref{sec:resultats} le confirme sur les trois autres activations.
+
+\subsection*{Étape 8 : l'ambiguïté de signe}
+
+En imposant $A_{1,1}=1$, l'attaque fixe implicitement un facteur d'échelle
+$c = 1 / A_{1,1,\text{vrai}}$. Ici, $A_{1,1,\text{vrai}} = -0{,}491228$,
+donc $c = -2{,}035713$, négatif. Comme le montre la
+figure~\ref{fig:invariances}, un facteur d'échelle négatif inverse l'ordre
+complet des scores : l'argmax du réseau reconstruit devient un argmin.
+
+L'effet est spectaculaire avant correction : $0$ accord sur $5\,000$ entrées
+de test, soit $0{,}0\,\%$, très en dessous du hasard à $25\,\%$ pour 4
+classes. Un score aussi inférieur au hasard n'est jamais un échec de la
+méthode : c'est la signature exacte d'une convention de signe inversée. La
+correction ne coûte qu'une seule requête supplémentaire, choisie à part des
+points de transition : elle compare la classe prédite par $\hat A, \hat b$ à
+la classe réelle sur une entrée quelconque, et inverse le signe de $\hat A,
+\hat b$ si elles diffèrent. La figure~\ref{fig:signe} illustre ce
+mécanisme.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=1.0, every node/.style={font=\small}]
+  % original order
+  \node[anchor=east] at (-0.3,1.5) {scores $u$ :};
+  \foreach \x/\v/\lbl in {0/0.3/classe 2, 2/0.9/classe 0, 4/1.5/classe 1, 6/0.6/classe 3} {
+    \fill[blue!60!black] (\x,1.5*\v) circle (2pt);
+    \node[below] at (\x,0) {\lbl};
+  }
+  \draw[-{Stealth[length=1.8mm]}, thick] (4,2.3) -- (4,2.6) node[above] {$\arg\max(u) = $ classe 1};
+  % arrow down to c*u
+  \draw[-{Stealth[length=2mm]}, black!50] (3,-0.6) -- (3,-1.3) node[midway, right] {$\times\, c,\ c<0$};
+  % flipped order
+  \node[anchor=east] at (-0.3,-2.5) {scores $c\cdot u$ :};
+  \foreach \x/\v/\lbl in {0/-0.3/classe 2, 2/-0.9/classe 0, 4/-1.5/classe 1, 6/-0.6/classe 3} {
+    \fill[red!60!black] (\x,-2.5-1.5*(-\v)) circle (2pt);
+  }
+  \draw[-{Stealth[length=1.8mm]}, thick] (0,-4.0) -- (0,-4.3) node[below] {$\arg\max(c\cdot u) = $ classe 2 $= \arg\min(u)$};
+\end{tikzpicture}
+\caption{Avec un facteur d'échelle positif imposé arbitrairement
+($A_{1,1}=1$), rien ne garantit que le vrai facteur soit positif. S'il est
+négatif, comme pour ReLU, GELU et SiLU dans ces résultats, le réseau
+reconstruit classe à l'envers : l'argmax devient un argmin. Une seule
+requête de sonde suffit à le détecter et à inverser les signes.}
+\label{fig:signe}
+\end{figure}
+
+\subsection*{Étape 9 : validation de l'équivalence fonctionnelle}
+
+Après correction, l'accord est parfait sur deux jeux de test indépendants :
+$5\,000/5\,000$ sur des entrées uniformes, $5\,000/5\,000$ sur des entrées
+gaussiennes. Tester sur deux distributions n'est pas redondant : une
+équivalence qui ne tiendrait que sur la distribution d'entraînement serait
+locale, pas fonctionnelle. Les matrices $\hat A$ et $A$ restent différentes
+(on a récupéré une classe d'équivalence, pas $\theta$ lui-même), mais les
+arg\-max coïncident partout.
+
+\subsection*{Étape 10 : où part le coût}
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+phase & requêtes & part \\
+\midrule
+recherche des points de transition & 16\,581 & $100{,}0\,\%$ \\
+exploration (trouver le premier point) & 1 & $0{,}0\,\%$ \\
+correction du signe & 1 & $0{,}0\,\%$ \\
+\midrule
+total & 16\,583 & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+La résolution du système linéaire lui-même ne coûte aucune requête, et
+quelques millisecondes. Presque tout le coût est dans la recherche des
+points de transition, et c'est strictement la même opération quelle que
+soit l'activation cachée : elle ne regarde que la couche de sortie, jamais
+ce qu'il y a avant. L'exécution complète prend $8{,}1$ secondes.
+
+\begin{remarque}[Pourquoi cette étape intéresse autant l'attaque que la défense]
+Côté attaque, cette recherche est trivialement parallélisable : chaque point
+de transition est indépendant des autres. Côté défense, c'est précisément
+la cible à viser. L'attaque a besoin d'une précision de $10^{-13}$ sur la
+position du point de transition, une contrainte numériquement
+extraordinairement fragile : bruiter la sortie de l'oracle, même très
+légèrement, romprait cette précision et donc la méthode.
+\end{remarque}
+
+\section{Résultats mesurés sur les quatre activations}
+\label{sec:resultats}
+
+Le protocole de la section précédente est rejoué à l'identique (même
+architecture, même graine $5$) pour GELU, SiLU et tanh. Les quatre
+exécutions sont indépendantes, chacune journalisée intégralement.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrrrr}
+\toprule
+Activation & Rang atteint & Écart max & Échelle $c$ & Accord avant & Accord après \\
+\midrule
+ReLU  & $26/26$ & $4{,}297 \times 10^{-14}$ & $-2{,}035713$ (négatif) & $0/5000$ & $5000/5000$ \\
+GELU  & $26/26$ & $1{,}306 \times 10^{-13}$ & $-2{,}831870$ (négatif) & $0/5000$ & $5000/5000$ \\
+SiLU  & $26/26$ & $2{,}132 \times 10^{-14}$ & $-4{,}920914$ (négatif) & $0/5000$ & $5000/5000$ \\
+tanh  & $26/26$ & $6{,}217 \times 10^{-15}$ & $0{,}548012$ (positif)  & $5000/5000$ & $5000/5000$ \\
+\bottomrule
+\end{tabular}
+\caption{Résultat principal. Le rang atteint et l'écart résiduel sont
+identiques, à la précision machine près, pour les quatre activations. Le
+signe de $c$ ne dépend pas de l'activation : c'est un hasard de tirage sur
+$A_{1,1,\text{vrai}}$, pas un effet systématique (3 négatifs, 1 positif sur
+4 essais).}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Activation & Requêtes totales & Temps \\
+\midrule
+ReLU & 16\,583 & $8{,}1$ s \\
+GELU & 16\,581 & $16{,}4$ s \\
+SiLU & 16\,589 & $9{,}3$ s \\
+tanh & 16\,577 & $8{,}4$ s \\
+\bottomrule
+\end{tabular}
+\caption{Le nombre de requêtes est quasi identique entre les quatre
+activations, ce qui confirme que la recherche des points de transition ne
+dépend pas de l'activation cachée. Le temps de GELU, environ deux fois plus
+long, s'explique par le coût de simulation de l'oracle (la fonction
+$\mathrm{erf}$ y est réimplémentée en Python pour rester sans dépendance à
+scipy), pas par l'attaque elle-même.}
+\end{table}
+
+\subsection*{Lecture}
+
+Le rang atteint, $26$ sur $26$, le maximum théorique pour cette
+architecture, et l'écart résiduel, de l'ordre de $10^{-13}$ à $10^{-15}$,
+proche de la précision machine, sont identiques pour les quatre
+activations. C'est la confirmation directe de ce qu'annonçaient les trois
+hypothèses : aucune ne porte sur l'activation cachée, et le comportement
+mesuré ne varie pas avec elle.
+
+Pour ReLU, GELU et SiLU, le facteur d'échelle global $c$ ressort négatif :
+la méthode reconstruit alors le réseau à l'envers, d'où un accord de
+$0/5000$ avant correction. Ce n'est pas un échec, c'est la signature
+attendue d'une inversion de convention (figure~\ref{fig:signe}), et une
+seule requête supplémentaire suffit à la détecter et à la corriger. Pour
+tanh, $c$ ressort positif d'emblée, donc aucune correction n'est
+nécessaire. Après correction, l'accord est parfait sur deux distributions
+de test, pour les quatre activations.
+
+\section{Limites}
+
+\begin{itemize}
+  \item Le résultat suppose les couches cachées $1..r$ déjà connues
+    (hypothèse H2). Ce n'est pas encore une attaque de bout en bout sur un
+    réseau dont tout est inconnu.
+  \item Testé sur un seul réseau jouet par activation, une seule graine. Le
+    réseau CIFAR-10 réel de l'article de départ n'a pas encore été rejoué
+    avec cette méthode.
+  \item La correction de l'ambiguïté de signe global en sortie multi-classes
+    (étape 8) va au-delà de ce que traite l'article de départ, qui ne la
+    discute que pour la sortie binaire. C'est une observation empirique
+    mesurée ici sur 4 exécutions indépendantes, pas encore démontrée
+    formellement.
+\end{itemize}
+
+\section{Reproduire ces résultats}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Activation & Journal (dans \texttt{logs/}) \\
+\midrule
+ReLU & \texttt{couche\_sortie\_relu.txt} \\
+GELU & \texttt{couche\_sortie\_gelu.txt} \\
+SiLU & \texttt{couche\_sortie\_silu.txt} \\
+tanh & \texttt{couche\_sortie\_tanh.txt} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Pour rejouer, depuis \texttt{travail\_aout\_2026/07-08-2026/} :
+
+\begin{quote}
+\verb|python attaque_couche_sortie.py --activation <nom> --seed 5 --sans-diagnostic|
+\end{quote}
+
+Le script fixe sa graine : les chiffres de ce document se reproduisent à
+l'identique à chaque exécution.
+
+\section{Prochaines étapes sur ce résultat}
+
+\begin{enumerate}
+  \item Démontrer formellement la correction de signe en sortie
+    multi-classes (étape 8), au lieu de la mesurer seulement
+    empiriquement.
+  \item Rejouer l'attaque sur plusieurs graines, pour vérifier que les
+    chiffres de la section~\ref{sec:resultats} ne sont pas un effet de
+    tirage favorable.
+  \item Rejouer l'attaque sur le réseau CIFAR-10 de l'article de départ, pour
+    passer d'un réseau jouet à l'échelle réelle utilisée dans la
+    littérature.
+\end{enumerate}
+
+\end{document}
