@@ -1,0 +1,218 @@
+\documentclass[11pt]{article}
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{french}
+\setmainfont{Latin Modern Roman}
+
+\usepackage[margin=2.6cm]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable}
+
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.6em}{}
+
+\newtcolorbox{remarque}[1][Remarque]{breakable, colback=black!3, colframe=black!40,
+  boxrule=0.4pt, arc=1pt, title=#1, fonttitle=\bfseries, coltitle=black}
+\newtcolorbox{cle}[1][À retenir]{breakable, colback=blue!4, colframe=blue!40!black,
+  boxrule=0.5pt, arc=1pt, title=#1, fonttitle=\bfseries, coltitle=blue!40!black}
+\newtcolorbox{question}[1]{breakable, colback=black!2, colframe=black!55,
+  boxrule=0.4pt, arc=1pt, title=Question probable~: #1, fonttitle=\bfseries\itshape,
+  coltitle=black}
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\title{Fiche de maîtrise, Résultat A\\[0.3em]
+\large Pour l'expliquer sans notes, pas pour le relire}
+\author{Tidiane Diallo}
+\date{5 novembre 2026}
+
+\begin{document}
+\maketitle
+
+\begin{remarque}[Objectif de cette fiche]
+Ce n'est pas un résumé du document envoyé au directeur
+(\texttt{RESULTAT\_A\_COMPLET\_05\_NOVEMBRE\_2026.tex}). C'est le fil
+narratif qui doit rester en tête pour pouvoir expliquer le résultat A à
+l'oral, reconstruire chaque étape sans notes, et répondre aux questions les
+plus probables sans hésiter.
+\end{remarque}
+
+\section{L'idée en une phrase}
+
+Carlini et al. savent tout récupérer d'un réseau ReLU en hard-label sauf la
+dernière couche, parce que cette couche n'a pas d'activation et donc pas de
+coude à détecter. Mon article de départ (Canales-Martínez et Santos) comble
+ce trou, mais seulement si le reste du réseau est en ReLU. Le résultat A
+montre que cette restriction est inutile : la méthode qui récupère la
+dernière couche ne regarde jamais l'activation cachée, elle regarde
+uniquement la règle de décision finale, un argmax, qui est la même quelle
+que soit l'activation.
+
+\begin{cle}
+Si on me coupe au milieu d'une explication, c'est la phrase à ressortir en
+premier : l'indépendance à l'activation n'est pas un espoir, c'est une
+conséquence directe de trois hypothèses qui ne mentionnent jamais
+l'activation.
+\end{cle}
+
+\section{Les trois hypothèses, en profondeur}
+
+\textbf{(H1)} Au point de transition $p$, $A_i \cdot y + b_i = A_j \cdot y +
+b_j$. C'est juste la définition d'une frontière de décision entre deux
+classes : le point où les deux scores sont à égalité parfaite.
+
+\textbf{(H2)} $y$ est calculable. C'est l'hypothèse qui fait le pont avec
+EUROCRYPT 2025 : eux savent extraire les couches cachées en ReLU hard-label,
+donc à partir de leur résultat, l'attaquant peut calculer $y = f_{1..r}(x)$
+pour n'importe quel $x$ qu'il choisit, même sans connaître l'activation en
+interne, puisqu'il a déjà les poids. Cette hypothèse, c'est « je prends le
+relais là où l'article précédent s'arrête ». Si on demande pourquoi je
+suppose ça~: ce n'est pas une triche, c'est la continuation logique d'une
+chaîne d'attaque déjà publiée.
+
+\textbf{(H3)} C'est la clé de tout. L'oracle ne renvoie que $\arg\max_k$.
+Deux propriétés en découlent.
+
+\begin{cle}[L'exemple à retenir par cœur]
+Scores $= (1, 5, 3)$. $\arg\max = $ indice 1 (valeur 5).
+\begin{itemize}
+  \item Ajouter $10$ à tous : $(11, 15, 13)$. $\arg\max$ toujours indice 1.
+    \textbf{Translation inoffensive.}
+  \item Multiplier tous par $2$ : $(2, 10, 6)$. $\arg\max$ toujours indice 1.
+    \textbf{Échelle positive inoffensive.}
+  \item Multiplier tous par $-1$ : $(-1, -5, -3)$. $\arg\max$ devient
+    l'indice 0 (valeur $-1$), qui était l'indice du \textbf{minimum}
+    original. \textbf{Échelle négative : l'argmax devient un argmin.}
+\end{itemize}
+Ces trois lignes expliquent, à elles seules, pourquoi « accord avant
+correction = $0/5000$ » apparaît dans le tableau de résultats pour ReLU,
+GELU et SiLU.
+\end{cle}
+
+\section{Pourquoi ça prouve l'indépendance à l'activation}
+
+Aucune des trois hypothèses ne parle de $\sigma$, l'activation. H1 est une
+égalité de scores. H2 dit juste que $y$ est calculable, peu importe
+comment. H3 porte sur l'argmax, qui s'applique après la dernière couche,
+jamais avant. Une fois que $y$ est traité comme une boîte noire calculable,
+le problème qui reste, retrouver un classifieur linéaire à partir de son
+argmax, est un problème purement algébrique qui ne voit plus ReLU, GELU,
+SiLU ou tanh.
+
+\begin{question}{« Ce n'est pas juste une évidence une fois qu'on lit les hypothèses ? »}
+Si, en partie, et c'est assumé dans le document. Mais personne ne l'avait
+vérifié explicitement sur quatre activations avec des mesures réelles avant
+ce travail, et la correction de l'ambiguïté de signe en sortie
+multi-classes va au-delà de ce que l'article de départ traite (lui ne
+discute que la sortie binaire). Ça, c'est une extension, pas seulement une
+vérification.
+\end{question}
+
+\section{Compter les degrés de liberté}
+
+$36$ coefficients à retrouver ($4$ classes $\times$ ($8$ poids $+$ $1$
+biais)). Mais l'attaquant ne peut jamais distinguer deux couches de sortie
+qui, après translation ou mise à l'échelle positive, donnent le même argmax
+partout. C'est la même limite que « je ne peux pas savoir si tu mesures en
+degrés décalés d'une constante, seule la différence de température
+compte ».
+
+\begin{itemize}
+  \item $9$ degrés invisibles pour la translation (décaler les 8 colonnes
+    de $A$ et le biais ne change rien à l'écart entre deux scores).
+  \item $1$ degré invisible pour l'échelle globale.
+\end{itemize}
+
+$36 - 10 = 26$.
+
+\begin{cle}
+« $26/26$ » dans le tableau de résultats n'est pas une bonne performance
+par chance, c'est la preuve que la méthode atteint exactement le plafond
+mathématiquement atteignable, ni plus ni moins. C'est un argument de
+correction, pas de qualité.
+\end{cle}
+
+\section{Le fil narratif des dix étapes}
+
+Pas les chiffres, juste la logique de chaque étape, pour pouvoir la
+reconstruire sans notes.
+
+\begin{enumerate}[leftmargin=1.4em]
+  \item \textbf{Construire le réseau cible.} On connaît sa vraie couche de
+    sortie pour pouvoir vérifier après coup. L'attaquant, lui, ne la voit
+    jamais.
+  \item \textbf{Trouver un point de transition par dichotomie.} Deux points
+    donnant des classes différentes, on coupe en deux, on regarde de quel
+    côté est la frontière, on recommence. Chaque itération divise
+    l'incertitude par 2. Après une cinquantaine d'itérations, on tombe sur
+    le mur de la précision machine ($2^{-52}$) : continuer ne sert à rien,
+    le flottant ne peut plus être plus précis.
+  \item \textbf{Identifier les deux classes en jeu} en sondant juste à
+    gauche et à droite du point trouvé.
+  \item \textbf{Construire une équation linéaire} à partir de ce point :
+    $(A_i - A_j)\cdot y + (b_i - b_j) = 0$. Un point de transition donne
+    exactement une ligne du système. C'est le cœur mécanique de toute la
+    méthode.
+  \item \textbf{Répéter jusqu'à avoir assez de points} (156 ici, soit
+    $6 \times 26$, une marge de sécurité, pas le strict minimum).
+  \item \textbf{Vérifier le rang avant de résoudre.} La discipline la plus
+    importante de tout le protocole : sans cette vérification,
+    \texttt{lstsq} renvoie quand même une solution, mais une solution
+    fausse, de norme minimale, pas la bonne, sans prévenir. Vérifier que le
+    noyau mesuré correspond exactement aux générateurs attendus
+    (translations + échelle) transforme « ça a tourné sans erreur » en
+    « c'est mathématiquement correct ».
+  \item \textbf{Résoudre en fixant arbitrairement 10 variables.} Un choix
+    de représentant dans la classe d'équivalence, comme choisir où mettre
+    le zéro d'un thermomètre.
+  \item \textbf{Corriger l'ambiguïté de signe.} Le moment le plus
+    spectaculaire : avant correction, $0\,\%$ d'accord, bien pire que le
+    hasard ($25\,\%$). Ça fait peur si on ne sait pas pourquoi, mais c'est
+    exactement la signature attendue d'une échelle négative (l'exemple à
+    trois nombres de la section~2). Une seule requête suffit à la
+    détecter.
+  \item \textbf{Valider sur deux distributions différentes}, pas une
+    seule, pour être sûr que l'équivalence est fonctionnelle partout, pas
+    seulement sur les données d'entraînement.
+  \item \textbf{Regarder où part le coût} : $100\,\%$ dans la recherche des
+    points de transition. C'est l'information la plus utile pour la suite
+    de la thèse côté défense : c'est cette étape-là qu'il faut rendre
+    difficile, pas la résolution du système, qui est instantanée.
+\end{enumerate}
+
+\section{Questions probables, réponses courtes}
+
+\begin{question}{« Pourquoi le facteur d'échelle est négatif 3 fois sur 4 ? »}
+Pur hasard du tirage aléatoire de $A_{1,1,\text{vrai}}$, rien de
+systématique. Avec une graine différente, le mélange de signes
+positifs/négatifs serait différent.
+\end{question}
+
+\begin{question}{« C'est quoi une classe d'équivalence ici, concrètement ? »}
+L'ensemble de tous les $(A,b)$ qui donnent exactement le même argmax pour
+toute entrée. On ne récupère jamais le $(A,b)$ exact, c'est mathématiquement
+impossible sans information supplémentaire, on récupère un représentant de
+sa classe, ce qui est tout ce que l'oracle peut révéler de toute façon.
+\end{question}
+
+\begin{question}{« Pourquoi GELU prend deux fois plus de temps ? »}
+Coût de simulation de l'oracle (la fonction $\mathrm{erf}$ réimplémentée en
+Python), pas un coût propre à l'attaque. Le nombre de requêtes, la vraie
+mesure qui compte, est quasi identique entre les quatre activations.
+\end{question}
+
+\begin{question}{« Est-ce que ça marcherait sur un vrai réseau, pas un réseau jouet ? »}
+C'est précisément la limite assumée dans le document : hypothèse H2 non
+vérifiée de bout en bout, une seule graine testée, pas encore rejoué sur le
+réseau CIFAR-10 de l'article de départ. Prochaine étape déjà identifiée.
+\end{question}
+
+\end{document}
